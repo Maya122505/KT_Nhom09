@@ -50,7 +50,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'q_test1.urls'
+ROOT_URLCONF = 'q_test.urls'
 
 import os  # nhớ import này
 
@@ -73,7 +73,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'q_test1.wsgi.application'
+WSGI_APPLICATION = 'q_test.wsgi.application'
 
 
 # Database
