@@ -3,159 +3,625 @@
 <head>
     <meta charset="UTF-8">
     <title>Làm bài: {{ de_thi.tenDeThi }} - Q-TEST</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-blue: #1e5bb8;
-            --sidebar-bg: #1e5bb8;
-            --text-dark: #1b2559;
-            --bg-light: #f4f7fe;
-            --border: #e2e8f0;
-            --gray: #a0aec0;
-            --danger: #ff5c5c;
+            --brand: #1565C0;
+            --shell: #E8DCDC;
+            --panel: #FFFFFF;
+            --text: #111827;
+            --border: #E5E7EB;
+            --soft: #F3F4F6;
         }
 
-        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg-light); overflow: hidden; }
+        * { box-sizing: border-box; }
 
-        /* SIDEBAR TRÁI */
-        .sidebar-left { width: 240px; background: var(--sidebar-bg); color: white; display: flex; flex-direction: column; height: 100vh; flex-shrink: 0; }
-        .logo-box { padding: 30px 25px; font-weight: 700; font-size: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .nav-item { padding: 15px 25px; cursor: pointer; transition: 0.3s; font-size: 14px; text-decoration: none; color: rgba(255,255,255,0.8); display: block; }
-        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid white; }
-        .logout-item { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); }
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: var(--panel);
+            color: var(--text);
+        }
 
-        /* NỘI DUNG CHÍNH */
-        .main-content { flex: 1; display: flex; flex-direction: column; background: white; border-radius: 30px 0 0 0; margin-top: 10px; overflow-y: auto; }
-        .top-header { padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
-        .quiz-body { padding: 30px 60px; }
-        .exam-title-box { background: #f8fafc; padding: 10px 20px; border-radius: 4px; border: 1px solid #cbd5e1; display: inline-block; margin-bottom: 30px; font-weight: 700; }
+        .shell {
+            min-height: 100vh;
+            padding: 0;
+        }
 
-        /* Câu hỏi & Hiệu ứng */
-        .question-block { margin-bottom: 40px; display: none; }
-        .question-block.active { display: block; animation: fadeIn 0.4s; }
-        @keyframes fadeIn { from {opacity: 0; transform: translateY(10px);} to {opacity: 1; transform: translateY(0);} }
+        .frame {
+            background: var(--panel);
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.10);
+            display: flex;
+            border-radius: 0;
+            overflow: hidden;
+            min-height: 100vh;
+            width: 100%;
+        }
 
-        .q-header { font-weight: 600; margin-bottom: 15px; border: 1px solid #000; padding: 5px 10px; display: inline-block; font-size: 14px; }
-        .options-list { list-style: none; padding: 0; margin-top: 25px; }
-        .option-item { margin-bottom: 15px; display: flex; align-items: center; gap: 12px; padding: 15px 20px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        .option-item:hover { background: #f8fafc; border-color: var(--primary-blue); }
-        .option-text { font-size: 16px; color: var(--text-dark); }
+        /* Sidebar */
+        .sidebar-left {
+            width: 250px;
+            background: var(--brand);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            padding: 18px 0;
+            flex-shrink: 0;
+        }
 
-        /* Nút điều hướng */
-        .footer-nav { margin-top: 40px; display: flex; gap: 15px; }
-        .btn-nav { padding: 10px 25px; background: var(--gray); color: white; border: none; cursor: pointer; border-radius: 6px; font-weight: 600; font-size: 14px; }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 18px 18px;
+        }
 
-        /* BẢNG CÂU HỎI PHẢI */
-        .sidebar-right { width: 300px; background: #f8fafc; border-left: 1px solid var(--border); padding: 20px; }
-        .timer-box { background: white; border: 1px solid var(--primary-blue); padding: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: 4px; font-weight: 700; font-size: 18px; color: var(--primary-blue); }
-        .q-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 20px; }
-        .q-num { height: 35px; border: 1px solid #cbd5e1; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; border-radius: 2px; }
-        .q-num.active { border: 2px solid var(--primary-blue); font-weight: 700; background: #e0f2fe; }
-        .q-num.done { background: #e2e8f0; color: #1e5bb8; font-weight: 700; }
-        .btn-submit-final { margin-top: 30px; width: 100%; padding: 12px; background: var(--primary-blue); color: white; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; font-size: 16px; }
+        .brand-mark {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
 
-        /* MODAL */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center; }
-        .modal-box { background: white; padding: 30px; border-radius: 8px; width: 380px; text-align: center; }
+        .brand-title {
+            line-height: 1.05;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .brand-sub {
+            margin-top: 4px;
+            font-size: 12px;
+            opacity: 0.85;
+            font-weight: 400;
+        }
+
+        .nav {
+            display: flex;
+            flex-direction: column;
+            margin-top: 8px;
+        }
+
+        .nav a {
+            padding: 12px 18px;
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.90);
+            font-size: 14px;
+        }
+
+        .nav a:hover { background: rgba(255, 255, 255, 0.10); }
+
+        .nav a.active {
+            background: rgba(255, 255, 255, 0.25);
+            border-left: 3px solid rgba(255, 255, 255, 0.95);
+            padding-left: 15px;
+        }
+
+        .nav-bottom { margin-top: auto; }
+
+        /* Content grid */
+        .content {
+            flex: 1;
+            min-width: 0;
+            padding: 14px 18px 18px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 280px;
+            gap: 18px 22px;
+        }
+
+        .top-header {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 4px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: rgba(0, 0, 0, 0.65);
+            font-size: 14px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .icon-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            background: #3a3434;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .user-box {
+            text-align: right;
+            line-height: 1.1;
+            font-size: 12px;
+        }
+
+        .user-name { font-weight: 700; }
+        .user-role { font-weight: 400; opacity: 0.85; }
+
+        .main-panel {
+            min-width: 0;
+            padding: 14px 6px 8px 4px;
+        }
+
+        .exam-title {
+            margin: 0 0 18px;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .question-block {
+            padding: 12px 0 16px;
+            border-bottom: 1px solid rgba(229, 231, 235, 0.75);
+            scroll-margin-top: 16px;
+        }
+
+        .q-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: rgba(17, 24, 39, 0.65);
+            margin-bottom: 10px;
+        }
+
+        .q-text {
+            margin: 0 0 12px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .option-line {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 13px;
+            color: rgba(17, 24, 39, 0.78);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .option-line input { margin-top: 2px; }
+
+        .opt-letter {
+            display: inline-block;
+            width: 18px;
+            font-weight: 700;
+            color: rgba(17, 24, 39, 0.65);
+        }
+
+        .footer-nav {
+            padding-top: 16px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .btn-nav {
+            border: none;
+            background: rgba(107, 114, 128, 0.80);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .side-panel {
+            padding: 14px 14px 16px;
+            background: var(--soft);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            align-self: start;
+            position: sticky;
+            top: 14px;
+        }
+
+        .timer-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--brand);
+            font-weight: 700;
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .question-list {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+        }
+
+        .question-list-title {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: rgba(17, 24, 39, 0.65);
+            margin-bottom: 10px;
+        }
+
+        .q-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+
+        .q-num {
+            height: 26px;
+            border: 1px solid #CBD5E1;
+            border-radius: 2px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .q-num.active { border: 2px solid var(--brand); font-weight: 700; }
+        .q-num.done { background: rgba(21, 101, 192, 0.10); border-color: rgba(21, 101, 192, 0.6); }
+
+        .btn-submit-final {
+            margin-top: 12px;
+            width: 100%;
+            padding: 10px 12px;
+            border: none;
+            border-radius: 6px;
+            background: var(--brand);
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.50);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-box {
+            width: min(520px, calc(100vw - 36px));
+            background: #fff;
+            border-radius: 8px;
+            padding: 18px 18px 16px;
+            text-align: center;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+            position: relative;
+        }
+
+        .modal-box.is-auto {
+            outline: 2px solid rgba(21, 101, 192, 0.65);
+        }
+
+        .modal-title {
+            color: var(--brand);
+            padding: 10px 12px 12px;
+            font-weight: 700;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            color: rgba(156, 163, 175, 0.95);
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 22px;
+            justify-content: center;
+        }
+
+        .btn-modal {
+            min-width: 110px;
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .btn-cancel { background: rgba(156, 163, 175, 0.95); color: #fff; }
+        .btn-ok { color: #fff; }
+        .btn-ok-primary { background: var(--brand); }
+        .btn-ok-danger { background: #EF4444; }
+
+        @media (max-width: 980px) {
+            .shell { padding: 0; }
+            .sidebar-left { width: 220px; }
+            .content { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-
     <div id="confirmModal" class="modal-overlay">
-        <div class="modal-box">
-            <div style="border: 1px solid var(--primary-blue); color: var(--primary-blue); padding: 10px; font-weight: 700; margin-bottom: 25px; font-size: 16px;">Bạn có chắc muốn kết thúc bài thi?</div>
-            <div style="display: flex; justify-content: center; gap: 15px;">
-                <button onclick="closeModal()" style="padding: 10px 25px; background: var(--gray); color: white; border: none; border-radius: 4px; cursor: pointer;">HUỶ</button>
-                <button onclick="finalSubmit()" style="padding: 10px 25px; background: var(--danger); color: white; border: none; border-radius: 4px; cursor: pointer;">HOÀN THÀNH</button>
+        <div class="modal-box" id="modalBox">
+            <button type="button" class="modal-close" aria-label="Đóng" onclick="closeModal()">X</button>
+            <div class="modal-title" id="modalTitle">Bạn có chắc muốn kết thúc bài thi?</div>
+            <div class="modal-actions">
+                <button type="button" class="btn-modal btn-cancel" id="modalCancelBtn" onclick="closeModal()">Hủy</button>
+                <button type="button" class="btn-modal btn-ok btn-ok-danger" id="modalOkBtn" onclick="finalSubmit()">HOÀN THÀNH</button>
             </div>
         </div>
     </div>
 
-    <div class="sidebar-left">
-        <div class="logo-box">Q - TEST <br><small>Online System</small></div>
-        <a href="{% url 'quiz:trang_chu' %}" class="nav-item">Trang chủ</a>
-        <a href="{% url 'quiz:danh_sach_de_thi' %}" class="nav-item active">Thực hiện đề thi</a>
-        <a href="{% url 'quiz:tra_cuu_ket_qua' %}" class="nav-item">Tra cứu kết quả</a>
-        <a href="{% url 'quiz:logout' %}" class="nav-item logout-item">Đăng xuất</a>
-    </div>
-
-    <div class="main-content">
-        <div class="top-header">
-            <a href="#" onclick="window.history.back()" style="text-decoration: none; color: #718096; font-size: 14px;">← Quay lại</a>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 12px; text-align: right;"><b>{{ user.hoTen }}</b><br>Học sinh</span>
-                <div style="width: 35px; height: 35px; background: #4a5568; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">{{ user.hoTen|first|upper }}</div>
-            </div>
-        </div>
-
-        <div class="quiz-body">
-            <div class="exam-title-box">{{ de_thi.tenDeThi }}</div>
-
-            <form id="quizForm" method="POST" action="{% url 'quiz:nop_bai' ket_qua.maKetQua %}">
-                {% csrf_token %}
-                {% for item in danh_sach_cau_hoi %}
-                <div class="question-block" id="block_q_{{ forloop.counter }}">
-                    <div class="q-header">Câu hỏi {{ forloop.counter }}</div>
-
-<p style="font-weight: 700; font-size: 22px; color: #1b2559; margin: 25px 0;">
-    {{ item.maCauHoi.noiDungCauHoi|default:item.maCauHoi }}
-</p>
-
-                    <div class="options-list">
-                        {% for lc in item.maCauHoi.luachon_set.all %}
-                        <label class="option-item">
-                            <input type="radio" name="cauhoi_{{ item.maCauHoi.maCauHoi }}" value="{{ lc.maLuaChon }}" onchange="markDone({{ forloop.parentloop.counter }})">
-                            <span class="option-text"><b>{{ forloop.counter|stringformat:"c"|upper }}.</b> {{ lc.noiDungLuaChon }}</span>
-                        </label>
-                        {% endfor %}
+    <div class="shell">
+        <iframe name="autosubmitFrame" title="autosubmit" style="display:none"></iframe>
+        <div class="frame">
+            <aside class="sidebar-left">
+                <div class="brand">
+                    <div class="brand-mark" aria-hidden="true">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1565C0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 6L9 17L4 12"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="brand-title">Q - TEST</div>
+                        <div class="brand-sub">Online System</div>
                     </div>
                 </div>
-                {% endfor %}
 
-                <div class="footer-nav">
-                    <button type="button" class="btn-nav" onclick="changeQuestion(-1)">Trang trước</button>
-                    <button type="button" class="btn-nav" onclick="changeQuestion(1)">Trang sau</button>
-                </div>
-            </form>
-        </div>
-    </div>
+                <nav class="nav">
+                    <a href="{% url 'quiz:trang_chu' %}">Trang chủ</a>
+                    <a href="{% url 'quiz:danh_sach_de_thi' %}" class="active">Thực hiện đề thi</a>
+                    <a href="{% url 'quiz:tra_cuu_ket_qua' %}">Tra cứu kết quả</a>
+                    <a href="{% url 'quiz:logout' %}">Đăng xuất</a>
+                </nav>
 
-    <div class="sidebar-right">
-        <div class="timer-box">⏱️ <span id="timer">00:00:00</span></div>
-        <div style="margin: 25px 0 10px; font-size: 13px; font-weight: 600;">Danh sách câu hỏi</div>
-        <div class="q-grid">
-            {% for item in danh_sach_cau_hoi %}
-            <div class="q-num" id="nav_q_{{ forloop.counter }}" onclick="goToQuestion({{ forloop.counter }})">{{ forloop.counter }}</div>
-            {% endfor %}
+                <nav class="nav nav-bottom">
+                    <a href="#" onclick="return false;">Cài đặt</a>
+                </nav>
+            </aside>
+
+            <div class="content">
+                <header class="top-header">
+                    <a class="back-link" href="#" onclick="window.history.back(); return false;">
+                        <span aria-hidden="true">←</span>
+                        <span>Quay lại</span>
+                    </a>
+
+                    <div class="header-right">
+                        <button type="button" class="icon-btn" aria-label="Thông báo">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                        </button>
+                        <div class="avatar" aria-hidden="true">{{ ket_qua.maNguoiHoc.hoTen|default:"T"|first|upper }}</div>
+                        <div class="user-box">
+                            <div class="user-name">{{ ket_qua.maNguoiHoc.hoTen|default:"Học sinh" }}</div>
+                            <div class="user-role">{{ ket_qua.maNguoiHoc.vaiTro|default:"Học sinh" }}</div>
+                        </div>
+                    </div>
+                </header>
+
+                <main class="main-panel">
+                    <h1 class="exam-title">{{ de_thi.tenDeThi }}</h1>
+
+                    <form id="quizForm" method="POST" action="{% url 'quiz:nop_bai' ket_qua.maKetQua %}">
+                        {% csrf_token %}
+
+                        {% for item in danh_sach_cau_hoi %}
+                        <section class="question-block" id="q_{{ forloop.counter }}">
+                            <div class="q-label">Câu hỏi {{ forloop.counter }}</div>
+                            <p class="q-text">{{ item.maCauHoi.noiDungCauHoi|default:item.maCauHoi }}</p>
+
+                            <div class="options">
+                                {% for lc in item.maCauHoi.luachon_set.all %}
+                                <label class="option-line">
+                                    <input type="radio"
+                                           name="cauhoi_{{ item.maCauHoi.maCauHoi }}"
+                                           value="{{ lc.maLuaChon }}"
+                                           onchange="markDone({{ forloop.parentloop.counter }})">
+                                    <span class="opt-letter">
+                                        {% if forloop.counter == 1 %}A.{% elif forloop.counter == 2 %}B.{% elif forloop.counter == 3 %}C.{% elif forloop.counter == 4 %}D.{% elif forloop.counter == 5 %}E.{% elif forloop.counter == 6 %}F.{% elif forloop.counter == 7 %}G.{% elif forloop.counter == 8 %}H.{% elif forloop.counter == 9 %}I.{% elif forloop.counter == 10 %}J.{% else %}{{ forloop.counter }}.{% endif %}
+                                    </span>
+                                    <span>{{ lc.noiDungLuaChon }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </section>
+                        {% endfor %}
+
+                        <div class="footer-nav">
+                            <button type="button" class="btn-nav" onclick="changeQuestion(-1)">Trang trước</button>
+                            <button type="button" class="btn-nav" onclick="changeQuestion(1)">Trang sau</button>
+                        </div>
+                    </form>
+                </main>
+
+                <aside class="side-panel">
+                    <div class="timer-row">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1565C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 6v6l4 2"></path>
+                        </svg>
+                        <span id="timer">00:00:00</span>
+                    </div>
+
+                    <div class="question-list">
+                        <div class="question-list-title">Danh sách câu hỏi</div>
+                        <div class="q-grid">
+                            {% for item in danh_sach_cau_hoi %}
+                            <div class="q-num" id="nav_q_{{ forloop.counter }}" onclick="goToQuestion({{ forloop.counter }})">{{ forloop.counter }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <button type="button" class="btn-submit-final" onclick="openModal()">Nộp bài</button>
+                    </div>
+                </aside>
+            </div>
         </div>
-        <button type="button" class="btn-submit-final" onclick="openModal()">Nộp bài</button>
     </div>
 
     <script>
         let currentQ = 1;
         const totalQ = {{ danh_sach_cau_hoi|length }};
-        function showQuestion(n) {
-            document.querySelectorAll('.question-block').forEach(b => b.classList.remove('active'));
+        let hasSubmitted = false;
+        let modalOkAction = null;
+
+        function setActive(n) {
             document.querySelectorAll('.q-num').forEach(b => b.classList.remove('active'));
-            document.getElementById('block_q_' + n).classList.add('active');
-            document.getElementById('nav_q_' + n).classList.add('active');
+            const el = document.getElementById('nav_q_' + n);
+            if (el) el.classList.add('active');
             currentQ = n;
         }
-        function changeQuestion(step) { let next = currentQ + step; if (next >= 1 && next <= totalQ) showQuestion(next); }
-        function goToQuestion(n) { showQuestion(n); }
-        function markDone(n) { document.getElementById('nav_q_' + n).classList.add('done'); }
+
+        function goToQuestion(n) {
+            const q = document.getElementById('q_' + n);
+            if (q) q.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setActive(n);
+        }
+
+        function changeQuestion(step) {
+            const next = currentQ + step;
+            if (next >= 1 && next <= totalQ) goToQuestion(next);
+        }
+
+        function markDone(n) {
+            const el = document.getElementById('nav_q_' + n);
+            if (el) el.classList.add('done');
+            setActive(n);
+        }
+
+        function setModalMode(mode) {
+            const modalBox = document.getElementById('modalBox');
+            const titleEl = document.getElementById('modalTitle');
+            const cancelBtn = document.getElementById('modalCancelBtn');
+            const okBtn = document.getElementById('modalOkBtn');
+
+            modalBox.classList.toggle('is-auto', mode === 'auto');
+
+            if (mode === 'auto') {
+                titleEl.innerText = 'Bài thi của bạn đã được nộp tự động';
+                cancelBtn.innerText = 'HỦY';
+                okBtn.innerText = 'XEM KẾT QUẢ';
+                okBtn.classList.remove('btn-ok-danger');
+                okBtn.classList.add('btn-ok-primary');
+                modalOkAction = () => { window.location.href = "{% url 'quiz:tra_cuu_ket_qua' %}"; };
+            } else {
+                titleEl.innerText = 'Bạn có chắc muốn kết thúc bài thi?';
+                cancelBtn.innerText = 'Hủy';
+                okBtn.innerText = 'HOÀN THÀNH';
+                okBtn.classList.remove('btn-ok-primary');
+                okBtn.classList.add('btn-ok-danger');
+                modalOkAction = () => finalSubmit();
+            }
+        }
 
         let seconds = {{ de_thi.thoiGian }} * 60;
         const timerInterval = setInterval(() => {
-            let h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = seconds % 60;
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
             document.getElementById('timer').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-            if (seconds-- <= 0) { clearInterval(timerInterval); finalSubmit(); }
+            if (seconds-- <= 0) { clearInterval(timerInterval); onTimeUp(); }
         }, 1000);
 
-        function openModal() { document.getElementById('confirmModal').style.display = 'flex'; }
+        function openModal(mode = 'manual') {
+            setModalMode(mode);
+            document.getElementById('confirmModal').style.display = 'flex';
+        }
+
         function closeModal() { document.getElementById('confirmModal').style.display = 'none'; }
-        function finalSubmit() { document.getElementById('quizForm').submit(); }
-        showQuestion(1);
+
+        function finalSubmit() {
+            if (hasSubmitted) return;
+            hasSubmitted = true;
+            document.getElementById('quizForm').submit();
+        }
+
+        function autoSubmitSilently() {
+            if (hasSubmitted) return;
+            hasSubmitted = true;
+            const form = document.getElementById('quizForm');
+            const prevTarget = form.getAttribute('target') || '';
+            form.setAttribute('target', 'autosubmitFrame');
+            form.submit();
+            if (prevTarget) form.setAttribute('target', prevTarget); else form.removeAttribute('target');
+        }
+
+        function lockInputs() {
+            document.querySelectorAll('input[type="radio"]').forEach(i => i.disabled = true);
+            document.querySelectorAll('.btn-nav').forEach(b => b.disabled = true);
+            const btn = document.querySelector('.btn-submit-final');
+            if (btn) btn.disabled = true;
+        }
+
+        function onTimeUp() {
+            lockInputs();
+            autoSubmitSilently();
+            openModal('auto');
+        }
+
+        setActive(1);
+
+        // Allow closing the modal with Escape.
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        document.getElementById('modalOkBtn').addEventListener('click', () => {
+            if (typeof modalOkAction === 'function') modalOkAction();
+        });
     </script>
 </body>
 </html>

@@ -8,6 +8,8 @@ urlpatterns = [
     path('', views.trang_chu, name='trang_chu'),
     path('trang-chu/', views.trang_chu, name='trang_chu'),
     path('login/', views.user_login, name='login'),
+    path('dang-ky/', views.user_register, name='register'),
+    path('khoi-phuc-mat-khau/', views.recover_password, name='recover_password'),
     path('logout/', views.user_logout, name='logout'),
 
     # Quản lý đề thi & Ngân hàng
@@ -22,7 +24,7 @@ urlpatterns = [
     path('chi-tiet-bai-lam/<int:ma_ket_qua>/', views.chi_tiet_bai_lam, name='chi_tiet_bai_lam'),
 
     # Giao diện làm bài cho sinh viên
-    path('thuc-hien-de-thi/', views.danh_sach_de_thi, name='danh_sach_de_thi'),
+    path('thuc-hien-de-thi/', views.thuc_hien_de_thi, name='danh_sach_de_thi'),
     path('hien-thi-de/<int:ma_ket_qua>/', views.hien_thi_de_thi, name='hien_thi_de_thi'),
     path('nop-bai/<int:ma_ket_qua>/', views.nop_bai, name='nop_bai'),
     path('tra-cuu-ket-qua/', views.tra_cuu_ket_qua, name='tra_cuu_ket_qua'),

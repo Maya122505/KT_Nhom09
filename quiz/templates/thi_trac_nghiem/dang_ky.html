@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Đăng nhập - Q-TEST</title>
+    <title>Đăng ký - Q-TEST</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -38,15 +38,14 @@
         }
 
         h1 {
-            margin: 0 0 16px;
+            margin: 0 0 14px;
             text-align: center;
             font-size: 18px;
             font-weight: 700;
             color: var(--text);
         }
 
-        .field { margin-top: 12px; }
-
+        .field { margin-top: 10px; }
         input {
             width: 100%;
             height: 34px;
@@ -56,7 +55,6 @@
             font-size: 13px;
             outline: none;
         }
-
         input::placeholder { color: rgba(17, 24, 39, 0.35); }
 
         .input-wrap { position: relative; }
@@ -72,14 +70,17 @@
             color: rgba(107, 114, 128, 0.9);
         }
 
-        .forgot {
-            margin-top: 10px;
-            font-size: 11px;
-            color: var(--muted);
+        .roles {
+            margin-top: 12px;
+            display: flex;
+            gap: 48px;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: rgba(17, 24, 39, 0.70);
         }
 
-        .forgot a { color: var(--muted); text-decoration: none; }
-        .forgot a:hover { text-decoration: underline; }
+        .roles label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
 
         .btn {
             margin-top: 14px;
@@ -102,7 +103,6 @@
             font-size: 11px;
             color: var(--muted);
         }
-
         .footer a { color: var(--muted); text-decoration: none; font-weight: 500; }
         .footer a:hover { text-decoration: underline; }
 
@@ -119,24 +119,28 @@
 </head>
 <body>
     <div class="card">
-        <h1>Đăng nhập</h1>
+        <h1>Đăng ký</h1>
 
         {% if error %}
         <div class="error">{{ error }}</div>
         {% endif %}
 
-        <form method="POST" action="{% url 'quiz:login' %}">
+        <form method="POST" action="{% url 'quiz:register' %}">
             {% csrf_token %}
 
             <div class="field">
-                <input type="email" name="email" placeholder="Email" required autocomplete="email">
+                <input type="text" name="hoTen" placeholder="Họ tên" required autocomplete="name">
+            </div>
+
+            <div class="field">
+                <input type="email" name="email" placeholder="Nhập email" required autocomplete="email">
             </div>
 
             <div class="field">
                 <div class="input-wrap">
-                    <input id="pwd" type="password" name="password" placeholder="Mật khẩu" required autocomplete="current-password">
-                    <button class="toggle" type="button" aria-label="Hiện/ẩn mật khẩu" onclick="togglePwd('pwd', 'eye')">
-                        <svg id="eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <input id="pwd1" type="password" name="password" placeholder="Mật khẩu" required autocomplete="new-password">
+                    <button class="toggle" type="button" aria-label="Hiện/ẩn mật khẩu" onclick="togglePwd('pwd1','eye1')">
+                        <svg id="eye1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
                             <circle cx="12" cy="12" r="3"></circle>
                         </svg>
@@ -144,15 +148,34 @@
                 </div>
             </div>
 
-            <div class="forgot">
-                <a href="{% url 'quiz:recover_password' %}">Quên mật khẩu?</a>
+            <div class="field">
+                <div class="input-wrap">
+                    <input id="pwd2" type="password" name="password2" placeholder="Nhập lại mật khẩu" required autocomplete="new-password">
+                    <button class="toggle" type="button" aria-label="Hiện/ẩn mật khẩu" onclick="togglePwd('pwd2','eye2')">
+                        <svg id="eye2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
-            <button type="submit" class="btn">Đăng nhập</button>
+            <div class="roles">
+                <label>
+                    <input type="radio" name="role" value="day">
+                    <span>Người dạy</span>
+                </label>
+                <label>
+                    <input type="radio" name="role" value="hoc" checked>
+                    <span>Người học</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn">Đăng ký</button>
         </form>
 
         <div class="footer">
-            Bạn chưa có tài khoản? <a href="{% url 'quiz:register' %}">Tạo một tài khoản mới?</a>
+            Đã có tài khoản? <a href="{% url 'quiz:login' %}">Đăng nhập</a>
         </div>
     </div>
 

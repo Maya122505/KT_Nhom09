@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.http import HttpResponseForbidden
 from django.db import transaction
-from django.db.models import Avg, Max
+from django.db.models import Avg, Max, Count
 from .models import NguoiDung, DeThi, KetQuaThi, DeThi_CauHoi, LuaChon, ChiTietBaiLam,Khoa
 
 # 1. TRANG CHỦ (DASHBOARD)
@@ -70,6 +70,7 @@ def xac_nhan_thi(request, ma_de_thi):
 
     # 7. Trả dữ liệu về giao diện
     context = {
+        'user': nguoi_dung,
         'de_thi': de_thi,
         'so_cau': so_cau,
         'so_lan_con_lai': so_lan_con_lai,
@@ -188,6 +189,70 @@ def user_logout(request):
     return redirect('quiz:login')
 
 
+def user_register(request):
+    if request.method == 'POST':
+        ho_ten = (request.POST.get('hoTen') or '').strip()
+        email = (request.POST.get('email') or '').strip().lower()
+        mat_khau = request.POST.get('password') or ''
+        nhap_lai = request.POST.get('password2') or ''
+        role_choice = request.POST.get('role') or 'hoc'
+
+        if not ho_ten or not email or not mat_khau:
+            return render(request, 'thi_trac_nghiem/dang_ky.html', {'error': 'Vui lòng nhập đầy đủ thông tin.'})
+
+        if mat_khau != nhap_lai:
+            return render(request, 'thi_trac_nghiem/dang_ky.html', {'error': 'Mật khẩu nhập lại không khớp.'})
+
+        if NguoiDung.objects.filter(email=email).exists():
+            return render(request, 'thi_trac_nghiem/dang_ky.html', {'error': 'Email đã tồn tại.'})
+
+        vai_tro = 'Giáo viên' if role_choice == 'day' else 'Học sinh'
+
+        try:
+            # NOTE: DB tables are `managed=False`, but writing rows is still allowed if DB is configured.
+            user = NguoiDung.objects.create(hoTen=ho_ten, email=email, matKhau=mat_khau, vaiTro=vai_tro)
+        except Exception as e:
+            # Some DB schemas don't auto-generate PKs for this table; fall back to manual increment.
+            try:
+                max_id = NguoiDung.objects.aggregate(Max('maNguoiDung'))['maNguoiDung__max']
+                next_id = (max_id + 1) if max_id is not None else 1
+                user = NguoiDung.objects.create(
+                    maNguoiDung=next_id,
+                    hoTen=ho_ten,
+                    email=email,
+                    matKhau=mat_khau,
+                    vaiTro=vai_tro,
+                )
+            except Exception as e2:
+                # Surface the real error to help you fix DB schema/config quickly.
+                return render(
+                    request,
+                    'thi_trac_nghiem/dang_ky.html',
+                    {'error': f'Không thể tạo tài khoản. Lỗi: {e2}'},
+                )
+
+        request.session['maNguoiDung'] = user.maNguoiDung
+        return redirect('quiz:trang_chu')
+
+    return render(request, 'thi_trac_nghiem/dang_ky.html')
+
+
+def recover_password(request):
+    # UI-only flow: accept email and show a generic success message (no email integration here).
+    if request.method == 'POST':
+        email = (request.POST.get('email') or '').strip().lower()
+        if not email:
+            return render(request, 'thi_trac_nghiem/khoi_phuc_mat_khau.html', {'error': 'Vui lòng nhập email.'})
+
+        return render(
+            request,
+            'thi_trac_nghiem/khoi_phuc_mat_khau.html',
+            {'success': 'Nếu email tồn tại, mã xác nhận đã được gửi.'},
+        )
+
+    return render(request, 'thi_trac_nghiem/khoi_phuc_mat_khau.html')
+
+
 def quan_ly_de_thi(request):
     # 1. Lấy tham số id_de từ URL (ví dụ: ?id_de=2)
     id_de = request.GET.get('id_de')
@@ -215,12 +280,48 @@ def danh_sach_de_thi(request):
     if not ma_nd: return redirect('quiz:login')
 
     user = get_object_or_404(NguoiDung, maNguoiDung=ma_nd)
-    # Lấy các đề thi đang trạng thái "Mở"
-    ds_de_thi = DeThi.objects.filter(trangThai='Mở')
+    # Lấy tất cả đề để UI có thể hiện cả nút "Không khả dụng" cho đề đã đóng.
+    ds_de_thi = DeThi.objects.all()
 
     return render(request, 'thi_trac_nghiem/thuc_hien_de_thi.html', {
         'user': user,
         'ds_de_thi': ds_de_thi
+    })
+
+
+def thuc_hien_de_thi(request):
+    ma_nd = request.session.get('maNguoiDung')
+    if not ma_nd:
+        return redirect('quiz:login')
+
+    user = get_object_or_404(NguoiDung, maNguoiDung=ma_nd)
+
+    # Danh sách đề thi từ DB. Template có thể tự quyết hiển thị "Bắt đầu làm bài" / "Không khả dụng"
+    # dựa theo trường `trangThai`.
+    ds_de_thi = DeThi.objects.all()
+
+    # Template đang dùng các field "soCauHoi" và "soLuotThi" như trong bản thiết kế.
+    # Model hiện tại dùng `soLanLam` và số câu nằm ở bảng trung gian DeThi_CauHoi.
+    q_counts = dict(
+        DeThi_CauHoi.objects.values("maDeThi").annotate(c=Count("maCauHoi")).values_list("maDeThi", "c")
+    )
+    attempt_counts = dict(
+        KetQuaThi.objects.filter(maNguoiHoc=user)
+        .values("maDeThi")
+        .annotate(c=Count("maKetQua"))
+        .values_list("maDeThi", "c")
+    )
+
+    for de in ds_de_thi:
+        de.soLuotThi = int(getattr(de, "soLanLam", 0) or 0)
+        de.soCauHoi = int(q_counts.get(de.maDeThi, 0) or 0)
+
+        de.soLuotDaThi = int(attempt_counts.get(de.maDeThi, 0) or 0)
+        de.soLuotConLai = max(0, de.soLuotThi - de.soLuotDaThi)
+
+    return render(request, 'quiz/danh_sach_bai_thi.html', {
+        'user': user,
+        'ds_de_thi': ds_de_thi,
     })
 def quan_ly_de_thi(request):
     id_de = request.GET.get('id_de')
@@ -444,28 +545,3 @@ def chi_tiet_bai_lam(request, ma_ket_qua):
     }
     # Đổi nốt cái này sang thi_trac_nghiem/ cho Uyên luôn
     return render(request, 'thi_trac_nghiem/chi_tiet_bai_lam.html', context)
-
-
-def xac_nhan_thi(request, ma_de_thi):
-    ma_nd = request.session.get('maNguoiDung')
-    if not ma_nd:
-        return redirect('quiz:login')
-
-    nguoi_dung = get_object_or_404(NguoiDung, maNguoiDung=ma_nd)
-    # 1. Tìm đúng cái đề thi mà học sinh vừa bấm vào
-    de_thi = get_object_or_404(DeThi, pk=ma_de_thi)
-
-    # 2. Đếm xem đề này có bao nhiêu câu hỏi
-    so_cau = DeThi_CauHoi.objects.filter(maDeThi=de_thi).count()
-    da_lam = KetQuaThi.objects.filter(maNguoiHoc=nguoi_dung, maDeThi=de_thi).count()
-    so_lan_con_lai = max(0, de_thi.soLanLam - da_lam)
-
-
-    context = {
-        'de_thi': de_thi,
-        'so_cau': so_cau,
-        'so_lan_con_lai': so_lan_con_lai,
-    }
-
-    # 4. Trả về giao diện xác nhận thi
-    return render(request, 'thi_trac_nghiem/xac_nhan_thi.html', context)

@@ -3,70 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <title>Danh sách bài thi - Q-TEST</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --blue: #1e5bb8; --bg: #f4f7fe; --text: #1b2559; }
-        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+        /* Tỉ lệ hóa toàn bộ thiết kế 1440x1024 sang đơn vị màn hình */
+        :root {
+            --base-w: 1440;
+            --base-h: 1024;
+        }
 
-        /* Sidebar trái (Giống hệt trang chủ) */
-        .sidebar { width: 260px; background: var(--blue); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
-        .logo { padding: 30px 20px; font-size: 24px; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .nav-link { padding: 15px 25px; color: rgba(255,255,255,0.8); text-decoration: none; transition: 0.3s; font-size: 14px; }
-        .nav-link.active { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid white; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
 
-        /* Nội dung chính */
-        .main { flex: 1; padding: 40px; overflow-y: auto; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        body {
+            background: #F5F5F5;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-        /* Danh sách đề thi (Giống hệt trang chủ) */
-        .exam-item { background: white; padding: 25px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border: 1px solid #edf2f7; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-        .exam-item:hover { transform: translateY(-2px); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
+        /* Container chính tự động co giãn theo màn hình trình duyệt */
+        .f-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #F5F5F5;
+        }
 
-        /* Nút Vào thi (Xanh Q-TEST) */
-        .btn-go { background: var(--blue); color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; transition: 0.3s; }
-        .btn-go:hover { background: #164a96; box-shadow: 0 5px 10px rgba(30, 91, 184, 0.3); }
+        /* --- SIDEBAR --- */
+        .f-sidebar {
+            position: absolute;
+            width: calc(264 / var(--base-w) * 100vw);
+            height: 100vh;
+            left: 0; top: 0; background: #1565C0;
+        }
 
-        .avatar { width: 42px; height: 42px; background: #2d3748; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .f-logo-box {
+            position: absolute;
+            width: calc(50 / var(--base-w) * 100vw);
+            height: calc(50 / var(--base-h) * 100vh);
+            left: calc(24 / var(--base-w) * 100vw);
+            top: calc(31 / var(--base-h) * 100vh);
+            background: #FFFFFF; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .f-qtest-text {
+            position: absolute;
+            left: calc(76 / var(--base-w) * 100vw);
+            top: calc(35 / var(--base-h) * 100vh);
+            font-weight: 700; font-size: 1.8vw; color: #FFFFFF;
+        }
+
+        .f-online-text {
+            position: absolute;
+            left: calc(77 / var(--base-w) * 100vw);
+            top: calc(59 / var(--base-h) * 100vh);
+            font-size: 1vw; color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Menu items */
+        .f-menu-item {
+            position: absolute;
+            width: 100%;
+            height: calc(66 / var(--base-h) * 100vh);
+            display: flex; align-items: center;
+            padding-left: calc(48 / var(--base-w) * 100vw);
+            font-weight: 500; font-size: 1.4vw; color: #FFFFFF;
+            text-decoration: none;
+        }
+        .f-trang-chu { top: calc(164 / var(--base-h) * 100vh); }
+        .f-thuc-hien { top: calc(226 / var(--base-h) * 100vh); background: rgba(245, 245, 245, 0.4); }
+        .f-tra-cuu   { top: calc(296 / var(--base-h) * 100vh); }
+        .f-dang-xuat { top: calc(428 / var(--base-h) * 100vh); }
+        .f-cai-dat   { top: calc(942 / var(--base-h) * 100vh); }
+
+        /* --- HEADER --- */
+        .f-header {
+            position: absolute;
+            width: calc(1174 / var(--base-w) * 100vw);
+            height: calc(95 / var(--base-h) * 100vh);
+            left: calc(266 / var(--base-w) * 100vw);
+            top: calc(30 / var(--base-h) * 100vh);
+            background: #FFFFFF;
+        }
+
+        .f-quay-lai {
+            position: absolute;
+            left: calc(371 / var(--base-w) * 100vw);
+            top: calc(63 / var(--base-h) * 100vh);
+            font-size: 1.6vw; opacity: 0.8; color: #000;
+        }
+
+        .f-avatar {
+            position: absolute;
+            width: calc(65 / var(--base-w) * 100vw);
+            height: calc(60 / var(--base-h) * 100vh);
+            left: calc(1200 / var(--base-w) * 100vw);
+            top: calc(47 / var(--base-h) * 100vh);
+            background: #393030; border-radius: 50%;
+            color: white; display: flex; align-items: center;
+            justify-content: center; font-size: 2vw;
+        }
+
+        .f-user-info {
+            position: absolute;
+            left: calc(1280 / var(--base-w) * 100vw);
+            top: calc(50 / var(--base-h) * 100vh);
+            font-weight: 700; font-size: 1.5vw; line-height: 1.2;
+        }
+
+        /* --- MAIN TITLE --- */
+        .f-title {
+            position: absolute;
+            left: calc(327 / var(--base-w) * 100vw);
+            top: calc(143 / var(--base-h) * 100vh);
+            font-weight: 700; font-size: 2.2vw; opacity: 0.8;
+        }
+
+        /* CARD BÀI THI */
+        .f-card {
+            position: absolute;
+            width: calc(517 / var(--base-w) * 100vw);
+            height: calc(399 / var(--base-h) * 100vh);
+            background: #FFFFFF; border-radius: 20px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-1 { left: calc(305 / var(--base-w) * 100vw); top: calc(205 / var(--base-h) * 100vh); }
+        .card-2 { left: calc(866 / var(--base-w) * 100vw); top: calc(205 / var(--base-h) * 100vh); }
+
+        .f-card-title {
+            position: absolute;
+            left: calc(69 / var(--base-w) * 100vw);
+            top: calc(28 / var(--base-h) * 100vh);
+            font-weight: 700; font-size: 2.2vw; opacity: 0.8;
+        }
+
+        .f-info-group {
+            position: absolute;
+            left: calc(133 / var(--base-w) * 100vw);
+            top: calc(86 / var(--base-h) * 100vh);
+            font-size: 2vw; line-height: 1.8;
+        }
+
+        /* Icon tỉ lệ */
+        .f-icon {
+            position: absolute;
+            width: 2.5vw; height: 2.5vw;
+            left: calc(61 / var(--base-w) * 100vw);
+        }
+        .icon-time { top: calc(99 / var(--base-h) * 100vh); }
+        .icon-ques { top: calc(144 / var(--base-h) * 100vh); }
+        .icon-sync { top: calc(201 / var(--base-h) * 100vh); }
+
+        .f-status {
+            position: absolute;
+            left: calc(65 / var(--base-w) * 100vw);
+            top: calc(259 / var(--base-h) * 100vh);
+            font-size: 1.5vw; color: #A7A4A4; opacity: 0.8;
+        }
+
+        /* Nút bấm */
+        .f-btn {
+            position: absolute;
+            width: calc(378 / var(--base-w) * 100vw);
+            height: calc(66 / var(--base-h) * 100vh);
+            left: calc(69 / var(--base-w) * 100vw);
+            top: calc(311 / var(--base-h) * 100vh);
+            background: #1565C0; border-radius: 8px;
+            color: white; display: flex; align-items: center;
+            justify-content: center; text-decoration: none;
+            font-weight: 500; font-size: 2vw;
+        }
     </style>
 </head>
 <body>
 
-    <nav class="sidebar">
-        <div class="logo">Q-TEST System</div>
-        <a href="{% url 'quiz:trang_chu' %}" class="nav-link">Trang chủ</a>
-        <a href="{% url 'quiz:danh_sach_de_thi' %}" class="nav-link active">Thực hiện đề thi</a>
-        <a href="{% url 'quiz:tra_cuu_ket_qua' %}" class="nav-link">Tra cứu kết quả</a>
-        <a href="{% url 'quiz:logout' %}" class="nav-link" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1);">Đăng xuất</a>
-    </nav>
-
-    <main class="main">
-        <div class="top-bar">
-            <h1 style="font-size: 24px; margin: 0;">✍️ Danh sách bài thi đang mở</h1>
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="text-align: right;">
-                    <div style="font-weight: 700;">{{ user.hoTen }}</div>
-                    <small style="color: #718096;">Học sinh</small>
-                </div>
-                <div class="avatar">{{ user.hoTen|first|upper }}</div>
+    <div class="f-container">
+        <div class="f-sidebar">
+            <div class="f-logo-box">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1565C0" stroke-width="3"><path d="M20 6L9 17L4 12"/></svg>
             </div>
+            <div class="f-qtest-text">Q - TEST</div>
+            <div class="f-online-text">Online System</div>
+
+            <a href="#" class="f-menu-item f-trang-chu">Trang chủ</a>
+            <a href="#" class="f-menu-item f-thuc-hien">Thực hiện đề thi</a>
+            <a href="#" class="f-menu-item f-tra-cuu">Tra cứu kết quả</a>
+            <a href="#" class="f-menu-item f-dang-xuat">Đăng xuất</a>
+            <a href="#" class="f-menu-item f-cai-dat">Cài đặt</a>
         </div>
 
-        <div class="exam-list-container" style="margin-top: 30px;">
-            {% for de in ds_de_thi %}
-            <div class="exam-item">
-                <div>
-                    <div style="font-weight: 700; font-size: 17px; color: #1b2559; margin-bottom: 5px;">{{ de.tenDeThi }}</div>
-                    <div style="font-size: 13px; color: #718096;">⏱️ Thời gian: {{ de.thoiGian }} phút | 🏷️ Trạng thái: {{ de.trangThai }}</div>
-                </div>
-                <a href="{% url 'quiz:xac_nhan_thi' de.maDeThi %}" class="btn-go">Bắt đầu làm bài</a>
-            </div>
-            {% empty %}
-            <div style="text-align: center; padding: 50px; color: #a0aec0; background: white; border-radius: 12px;">
-                Chưa có đề thi nào được mở.
-            </div>
-            {% endfor %}
+        <div class="f-header"></div>
+        <div class="f-quay-lai">Quay lại</div>
+        <div class="f-avatar">{{ user.hoTen|first|upper }}</div>
+        <div class="f-user-info">
+            {{ user.hoTen }}<br>
+            <span style="font-weight: 400; font-size: 1vw;">Học sinh</span>
         </div>
-    </main>
+
+        <h1 class="f-title">Danh sách bài thi</h1>
+
+        {% for de in ds_de_thi %}
+        <div class="f-card {% if forloop.counter == 1 %}card-1{% else %}card-2{% endif %}">
+            <div class="f-card-title">{{ de.tenDeThi }}</div>
+
+            <img src="https://cdn-icons-png.flaticon.com/512/109/109613.png" class="f-icon icon-time">
+            <img src="https://cdn-icons-png.flaticon.com/512/5726/5726470.png" class="f-icon icon-ques">
+            <img src="https://cdn-icons-png.flaticon.com/512/126/126502.png" class="f-icon icon-sync">
+
+            <div class="f-info-group">
+                {{ de.thoiGian }} phút<br>
+                {{ de.soCauHoi }} câu<br>
+                1/{{ de.soLuotThi }} lượt
+            </div>
+
+            <div class="f-status">Đang mở</div>
+
+            <a href="{% url 'quiz:xac_nhan_thi' de.maDeThi %}" class="f-btn">Bắt đầu làm bài</a>
+        </div>
+        {% endfor %}
+    </div>
 
 </body>
 </html>
