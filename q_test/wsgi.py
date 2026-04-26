@@ -1,5 +1,5 @@
 """
-WSGI config for q_test1 project.
+WSGI config for q_test project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

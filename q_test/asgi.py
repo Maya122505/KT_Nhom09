@@ -1,5 +1,5 @@
 """
-ASGI config for q_test1 project.
+ASGI config for q_test project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
