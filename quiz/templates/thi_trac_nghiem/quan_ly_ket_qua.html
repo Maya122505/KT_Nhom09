@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Kết quả chi tiết - Q-TEST</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --blue: #1e5bb8; --bg: #f4f7fe; --text: #1b2559; --gray: #64748b; }
+        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; background: var(--bg); min-height: 100vh; }
+        .sidebar { width: 240px; background: var(--blue); color: white; display: flex; flex-direction: column; min-height: 100vh; }
+        .logo { padding: 25px; font-size: 20px; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .nav-link { padding: 15px 25px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 14px; }
+        .nav-link.active { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid white; }
+        .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .container { padding: 30px; }
+        .table-box { background: white; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #f8fafc; padding: 15px; color: #64748b; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: var(--text); font-size: 14px; }
+        .btn-tab { padding: 10px 20px; text-decoration: none; border-radius: 4px; font-size: 14px; color: var(--gray); }
+        .btn-tab.active { background: var(--blue); color: white; }
+    </style>
+</head>
+<body>
+
+<nav class="sidebar">
+    <div class="logo">Q - TEST</div>
+    <a href="{% url 'quiz:trang_chu' %}" class="nav-link">Trang chủ</a>
+        <a href="/quiz/quan-ly-de-thi/" class="nav-link">Quản lý đề thi</a>
+        <a href="{% url 'quiz:ngan_hang_cau_hoi' %}" class="nav-link active">Quản lý kết quả thi</a>
+        <a href="/quiz/quan-ly-ket-qua/" class="nav-link">Ngân hàng câu hỏi</a>
+    <a href="{% url 'quiz:logout' %}" class="nav-link" style="margin-top: auto;">Đăng xuất</a>
+</nav>
+
+<main class="main">
+    <div class="container">
+        <div style="margin-bottom:20px; display:flex; align-items:center; gap:15px;">
+            <button onclick="history.back()" style="background:#64748b; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">← Quay lại</button>
+            <h2 style="margin:0; font-size:18px;">{{ de_thi.tenDeThi }}</h2>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
+            <a href="?tab=list" class="btn-tab {% if tab != 'chart' %}active{% endif %}">Danh sách điểm</a>
+            <a href="?tab=chart" class="btn-tab {% if tab == 'chart' %}active{% endif %}">Thống kê phổ điểm</a>
+        </div>
+
+        {% if tab != 'chart' %}
+            <div class="table-box">
+                <table>
+                    <thead>
+                        <tr><th>STT</th><th>Họ tên</th><th>Điểm</th><th>Thời gian nộp</th><th>Hành động</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for kq in ds_ket_qua %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ kq.maNguoiHoc.hoTen }}</td>
+                            <td style="font-weight: bold; color: var(--blue);">{{ kq.diemSo }}</td>
+                            <td>{{ kq.thoiGianNopBai|date:"H:i d/m/Y" }}</td>
+                            <td><a href="{% url 'quiz:chi_tiet_bai_lam' kq.maKetQua %}" style="color:var(--blue); text-decoration:none; font-weight:600;">Xem bài làm</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <canvas id="phoDiemChart" style="max-height: 400px;"></canvas>
+            </div>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script>
+                const ctx = document.getElementById('phoDiemChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                        datasets: [{
+                            label: 'Số lượng học sinh',
+                            data: {{ pho_diem|safe }},
+                            backgroundColor: '#1e5bb8'
+                        }]
+                    },
+                    options: { scales: { y: { beginAtZero: true } } }
+                });
+            </script>
+        {% endif %}
+    </div>
+</main>
+</body>
+</html>

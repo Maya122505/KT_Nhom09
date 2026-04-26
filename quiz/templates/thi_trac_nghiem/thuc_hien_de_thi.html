@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách bài thi - Q-TEST</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --blue: #1e5bb8; --bg: #f4f7fe; --text: #1b2559; }
+        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+
+        /* Sidebar trái (Giống hệt trang chủ) */
+        .sidebar { width: 260px; background: var(--blue); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+        .logo { padding: 30px 20px; font-size: 24px; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .nav-link { padding: 15px 25px; color: rgba(255,255,255,0.8); text-decoration: none; transition: 0.3s; font-size: 14px; }
+        .nav-link.active { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid white; }
+
+        /* Nội dung chính */
+        .main { flex: 1; padding: 40px; overflow-y: auto; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+
+        /* Danh sách đề thi (Giống hệt trang chủ) */
+        .exam-item { background: white; padding: 25px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border: 1px solid #edf2f7; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .exam-item:hover { transform: translateY(-2px); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
+
+        /* Nút Vào thi (Xanh Q-TEST) */
+        .btn-go { background: var(--blue); color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; transition: 0.3s; }
+        .btn-go:hover { background: #164a96; box-shadow: 0 5px 10px rgba(30, 91, 184, 0.3); }
+
+        .avatar { width: 42px; height: 42px; background: #2d3748; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="logo">Q-TEST System</div>
+        <a href="{% url 'quiz:trang_chu' %}" class="nav-link">Trang chủ</a>
+        <a href="{% url 'quiz:danh_sach_de_thi' %}" class="nav-link active">Thực hiện đề thi</a>
+        <a href="{% url 'quiz:tra_cuu_ket_qua' %}" class="nav-link">Tra cứu kết quả</a>
+        <a href="{% url 'quiz:logout' %}" class="nav-link" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1);">Đăng xuất</a>
+    </nav>
+
+    <main class="main">
+        <div class="top-bar">
+            <h1 style="font-size: 24px; margin: 0;">✍️ Danh sách bài thi đang mở</h1>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="text-align: right;">
+                    <div style="font-weight: 700;">{{ user.hoTen }}</div>
+                    <small style="color: #718096;">Học sinh</small>
+                </div>
+                <div class="avatar">{{ user.hoTen|first|upper }}</div>
+            </div>
+        </div>
+
+        <div class="exam-list-container" style="margin-top: 30px;">
+            {% for de in ds_de_thi %}
+            <div class="exam-item">
+                <div>
+                    <div style="font-weight: 700; font-size: 17px; color: #1b2559; margin-bottom: 5px;">{{ de.tenDeThi }}</div>
+                    <div style="font-size: 13px; color: #718096;">⏱️ Thời gian: {{ de.thoiGian }} phút | 🏷️ Trạng thái: {{ de.trangThai }}</div>
+                </div>
+                <a href="{% url 'quiz:xac_nhan_thi' de.maDeThi %}" class="btn-go">Bắt đầu làm bài</a>
+            </div>
+            {% empty %}
+            <div style="text-align: center; padding: 50px; color: #a0aec0; background: white; border-radius: 12px;">
+                Chưa có đề thi nào được mở.
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+</body>
+</html>

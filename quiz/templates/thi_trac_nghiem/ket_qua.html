@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả bài thi - Q-TEST</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e5bb8; /* Đổi sang màu xanh thương hiệu Q-TEST của Uyên */
+            --bg: #f4f7fe;
+            --success: #10b981;
+            --text-dark: #1b2559;
+            --text-light: #6b7280;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .result-card {
+            background: white;
+            padding: 50px 40px;
+            border-radius: 30px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .icon-check {
+            width: 90px;
+            height: 90px;
+            background: #ecfdf5;
+            color: var(--success);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 45px;
+            margin: 0 auto 25px;
+            animation: bounceIn 0.6s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        h1 { color: var(--text-dark); margin: 0 0 10px; font-size: 26px; font-weight: 800; }
+
+        .score-container {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 20px;
+        }
+
+        .score-label { font-size: 14px; font-weight: 600; color: var(--text-light); margin-bottom: 5px; }
+
+        .score-box {
+            font-size: 56px;
+            font-weight: 900;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .details {
+            color: var(--text-light);
+            margin-bottom: 35px;
+            line-height: 1.8;
+            font-size: 15px;
+            text-align: left;
+            background: #fff;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px dashed #e2e8f0;
+        }
+
+        .btn-home {
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 16px 40px;
+            border-radius: 14px;
+            font-weight: 700;
+            display: inline-block;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 15px rgba(30, 91, 184, 0.2);
+        }
+
+        .btn-home:hover {
+            background: #164a96;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 20px rgba(30, 91, 184, 0.3);
+        }
+
+        .footer-link {
+            margin-top: 25px;
+            display: block;
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="result-card">
+    <div class="icon-check">✓</div>
+    <h1>Nộp bài thành công!</h1>
+    <p style="color: var(--text-light); margin-bottom: 0;">Chúc mừng học viên:</p>
+    <p style="font-weight: 700; font-size: 18px; margin-top: 5px; color: var(--text-dark);">
+        {{ ket_qua.maNguoiHoc.hoTen }}
+    </p>
+
+    <div class="score-container">
+        <div class="score-label">ĐIỂM SỐ CỦA BẠN</div>
+        <div class="score-box">
+            {{ ket_qua.diemSo }}<span style="font-size: 20px; color: #9ca3af; font-weight: 500;">/10</span>
+        </div>
+    </div>
+
+    <div class="details">
+        📍 <b>Đề thi:</b> {{ ket_qua.maDeThi.tenDeThi }} <br>
+        📅 <b>Ngày nộp:</b> {{ ket_qua.thoiGianNopBai|date:"d/m/Y" }} <br>
+        ⏰ <b>Giờ nộp:</b> {{ ket_qua.thoiGianNopBai|date:"H:i:s" }}
+    </div>
+
+    <a href="{% url 'quiz:trang_chu' %}" class="btn-home">Quay lại Trang chủ</a>
+
+    <a href="{% url 'quiz:tra_cuu_ket_qua' %}" class="footer-link">Xem lịch sử bài làm →</a>
+</div>
+
+</body>
+</html>

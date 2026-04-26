@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>{% if de_thi %}Sửa đề thi{% else %}Tạo đề thi mới{% endif %}</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7fe; display: flex; justify-content: center; padding-top: 50px; }
+        .form-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 350px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        .btn-save { width: 100%; padding: 12px; background: #1e5bb8; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="form-card">
+        <h2>{% if de_thi %}Sửa đề thi{% else %}Tạo đề thi mới{% endif %}</h2>
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Tên đề thi</label>
+                <input type="text" name="tenDeThi" value="{{ de_thi.tenDeThi|default:'' }}" required>
+            </div>
+            <div class="form-group">
+                <label>Thời gian (phút)</label>
+                <input type="number" name="thoiGian" value="{{ de_thi.thoiGian|default:15 }}" required>
+            </div>
+            <div class="form-group">
+                <label>Trạng thái</label>
+<select name="trangThai">
+    {% if de_thi.trangThai == "Mở" %}
+        <option value="Mở" selected>Mở</option>
+        <option value="Đóng">Đóng</option>
+    {% elif de_thi.trangThai == "Đóng" %}
+        <option value="Mở">Mở</option>
+        <option value="Đóng" selected>Đóng</option>
+    {% else %}
+        <option value="Mở" selected>Mở</option>
+        <option value="Đóng">Đóng</option>
+    {% endif %}
+</select>
+            </div>
+            <button type="submit" class="btn-save">LƯU THÔNG TIN</button>
+            <br><br>
+            <a href="{% url 'quiz:quan_ly_de_thi' %}" style="text-decoration: none; color: #666; font-size: 13px; display: block; text-align: center;">Quay lại</a>
+        </form>
+    </div>
+</body>
+</html>

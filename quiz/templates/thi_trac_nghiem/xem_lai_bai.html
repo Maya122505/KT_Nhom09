@@ -1,0 +1,28 @@
+<div class="main" style="padding: 40px; font-family: sans-serif; background: #f4f7fe; min-height: 100vh;">
+    <h2 style="color: #1b2559;">📝 Chi tiết bài làm: {{ ket_qua.maDeThi.tenDeThi }}</h2>
+    <p><b>Điểm số:</b> {{ ket_qua.diemSo }}/10</p>
+    <hr>
+
+{% for item in chi_tiet %}
+<div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;
+    border-left: 5px solid {% if item.maLuaChonDaChon.dapAnDung %}#10b981{% else %}#ef4444{% endif %};">
+
+    <p><b>Câu {{ forloop.counter }}: {{ item.maCauHoi.noiDung }}</b></p>
+
+    <p>👉 Bạn chọn:
+        <span style="font-weight: 600; color: {% if item.maLuaChonDaChon.dapAnDung %}#10b981{% else %}#ef4444{% endif %};">
+            {{ item.maLuaChonDaChon.noiDungLuaChon }}
+        </span>
+        {% if item.maLuaChonDaChon.dapAnDung %} ✅ {% else %} ❌ {% endif %}
+    </p>
+
+    {% if not item.maLuaChonDaChon.dapAnDung %}
+    <p style="color: #718096; font-size: 14px;">
+        <i>(Đáp án đúng là: {{ item.maCauHoi.luachon_set.filter.dapAnDung.first.noiDungLuaChon }})</i>
+    </p>
+    {% endif %}
+</div>
+{% endfor %}
+
+    <a href="{% url 'quiz:tra_cuu_ket_qua' %}" style="color: var(--blue); font-weight: 600;">← Quay lại danh sách</a>
+</div>

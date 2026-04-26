@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Xác nhận làm bài - {{ de_thi.tenDeThi }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --blue: #1565C0;
+        --bg: #F5F5F5;
+        --text: #000000;
+    }
+
+    body {
+        font-family: 'Roboto', 'Inter', sans-serif;
+        margin: 0;
+        display: flex;
+        background: var(--bg);
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    /* Sidebar thu hẹp lại một chút */
+    .sidebar {
+        width: 220px; /* Giảm từ 264px */
+        background: var(--blue);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        flex-shrink: 0;
+    }
+
+    .logo {
+        padding: 25px 20px;
+        font-size: 20px; /* Giảm font logo */
+        font-weight: 700;
+        color: #FFFFFF;
+    }
+
+    .nav-link {
+        padding: 15px 30px; /* Giảm padding */
+        color: rgba(255,255,255,0.8);
+        text-decoration: none;
+        font-size: 16px; /* Giảm từ 20px */
+        font-weight: 500;
+        transition: 0.3s;
+    }
+
+    .nav-link.active {
+        background: rgba(245, 245, 245, 0.4);
+        color: white;
+        margin: 0 10px;
+        border-radius: 4px;
+    }
+
+    .main {
+        flex: 1;
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow-y: auto;
+    }
+
+    .breadcrumb {
+        align-self: flex-start;
+        margin-bottom: 20px;
+        color: rgba(0, 0, 0, 0.8);
+        text-decoration: none;
+        font-size: 16px; /* Giảm từ 24px */
+    }
+
+    /* Hộp xác nhận thu nhỏ lại */
+    .confirm-card {
+        background: white;
+        width: 600px; /* Giảm từ 844px */
+        min-height: 400px; /* Giảm từ 489px */
+        padding: 40px;
+        border-radius: 12px; /* Thêm bo góc nhẹ cho hiện đại */
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        text-align: center;
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .exam-title {
+        font-size: 24px; /* Giảm từ 32px */
+        font-weight: 700;
+        color: rgba(0, 0, 0, 0.8);
+        margin-bottom: 30px;
+        max-width: 100%;
+    }
+
+    .info-grid {
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-bottom: 40px;
+        color: #000000;
+        font-size: 18px; /* Giảm từ 28px để không bị thô */
+        font-weight: 500;
+    }
+
+    /* Nút xác nhận thu nhỏ */
+    .btn-confirm {
+        background: #1565C0;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 18px; /* Giảm từ 32px */
+        cursor: pointer;
+        transition: 0.3s;
+        width: 250px; /* Giảm từ 378px */
+    }
+
+    .btn-confirm:hover {
+        background: #0D47A1;
+        transform: translateY(-2px);
+    }
+</style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="logo">Q-TEST System</div>
+        <a href="{% url 'quiz:trang_chu' %}" class="nav-link">Trang chủ</a>
+        <a href="{% url 'quiz:danh_sach_de_thi' %}" class="nav-link active">Thực hiện đề thi</a>
+        <a href="{% url 'quiz:tra_cuu_ket_qua' %}" class="nav-link">Tra cứu kết quả</a>
+
+        <a href="{% url 'quiz:logout' %}" class="nav-link" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1);">Đăng xuất</a>
+    </nav>
+
+    <main class="main">
+        <a href="{% url 'quiz:danh_sach_de_thi' %}" class="breadcrumb">← Quay lại danh sách</a>
+
+        <div class="confirm-card">
+            <div class="exam-title">Đề: {{ de_thi.tenDeThi }}</div>
+
+            <div class="info-grid">
+                <div>⏱️ <b>Thời gian làm bài:</b> {{ de_thi.thoiGian }} phút</div>
+                <div>❓ <b>Số lượng câu hỏi:</b> {{ so_cau }} câu</div>
+                <div>👥 <b>Số lần làm còn lại:</b> {{ so_lan_con_lai }}</div>
+            </div>
+
+            <form method="POST" action="{% url 'quiz:bat_dau_thi' de_thi.maDeThi %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-confirm">Xác nhận làm bài</button>
+            </form>
+        </div>
+    </main>
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+<div class="container">
+    <button onclick="history.back()">← Quay lại</button>
+    <h3>Chi tiết bài làm: {{ ket_qua.maNguoiHoc.hoTen }}</h3>
+    <table class="table-box">
+        <thead>
+            <tr><th>STT</th><th>Câu hỏi</th><th>Đáp án đã chọn</th><th>Đáp án đúng</th><th>Kết quả</th></tr>
+        </thead>
+        <tbody>
+            {% for ct in chi_tiet %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ ct.maCauHoi.noiDungCauHoi }}</td>
+                <td>{{ ct.maLuaChonDaChon.noiDungLuaChon }}</td>
+                <td>
+                    {% for choice in ct.maCauHoi.luachon_set.all %}
+                        {% if choice.dapAnDung %}{{ choice.noiDungLuaChon }}{% endif %}
+                    {% endfor %}
+                </td>
+                <td>{% if ct.maLuaChonDaChon.dapAnDung %}Đúng{% else %}Sai{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
