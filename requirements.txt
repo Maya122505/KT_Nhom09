@@ -1,0 +1,8 @@
+Django==4.2.8
+gunicorn==22.0.0
+whitenoise==6.7.0
+
+# SQL Server deps (only for local Windows dev). Render Linux won't try to install these.
+mssql-django==1.5; platform_system=="Windows"
+pyodbc==5.1.0; platform_system=="Windows"
+

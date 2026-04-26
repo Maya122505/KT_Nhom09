@@ -20,12 +20,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-e&j6ao360)5_70i!(m-%ry5x%+_8u7#qq6r0jsium8btv&+xtv'
+SECRET_KEY = os.getenv(
+    "SECRET_KEY",
+    "django-insecure-e&j6ao360)5_70i!(m-%ry5x%+_8u7#qq6r0jsium8btv&+xtv",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+DEBUG = os.getenv("DEBUG", "True" if not RENDER_EXTERNAL_HOSTNAME else "False").lower() in ("1", "true", "yes")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+extra_hosts = os.getenv("ALLOWED_HOSTS")
+if extra_hosts:
+    ALLOWED_HOSTS.extend([h.strip() for h in extra_hosts.split(",") if h.strip()])
 
 
 # Application definition
@@ -42,6 +51,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -92,6 +102,28 @@ DATABASES = {
     }
 }
 
+# Render/Linux: default to SQLite to avoid requiring SQL Server/ODBC.
+# Local Windows dev: keep SQL Server, but allow overriding via env vars.
+if os.name == "nt":
+    DATABASES["default"]["NAME"] = os.getenv("MSSQL_NAME", DATABASES["default"].get("NAME", "Q_TEST"))
+    DATABASES["default"]["HOST"] = os.getenv("MSSQL_HOST", DATABASES["default"].get("HOST", "localhost"))
+    DATABASES["default"]["PORT"] = os.getenv("MSSQL_PORT", DATABASES["default"].get("PORT", ""))
+    DATABASES["default"].setdefault("OPTIONS", {})
+    DATABASES["default"]["OPTIONS"]["driver"] = os.getenv(
+        "MSSQL_DRIVER",
+        DATABASES["default"]["OPTIONS"].get("driver", "ODBC Driver 17 for SQL Server"),
+    )
+    DATABASES["default"]["OPTIONS"]["extra_params"] = os.getenv(
+        "MSSQL_EXTRA_PARAMS",
+        DATABASES["default"]["OPTIONS"].get("extra_params", "Trusted_Connection=yes;"),
+    )
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
 # Password validation
@@ -129,6 +161,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    }
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
