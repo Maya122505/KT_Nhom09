@@ -63,6 +63,10 @@
         .btn{ width:280px; height:48px; border:none; border-radius:4px; background:var(--blue); color:#fff; font-weight:800; font-size:14px; cursor:pointer; transition:0.2s; }
         .btn:hover{background:#0d4ea7;transform:translateY(-1px)}
 
+        /* THÊM MỚI: Màu cho nút Tiếp tục */
+        .btn-warning { background: #f59e0b; color: #fff; }
+        .btn-warning:hover { background: #d97706; }
+
         /* Modal Styles */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); z-index: 1000; justify-content: center; align-items: center; }
         .modal-box { background: #fff; width: 350px; border-radius: 12px; padding: 24px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
@@ -168,7 +172,16 @@
 
             <form id="startForm" method="POST" action="{% url 'quiz:bat_dau_thi' de_thi.id %}">
                 {% csrf_token %}
-                <button type="button" class="btn" onclick="attemptStart()">Bắt đầu làm bài</button>
+
+                {% if co_bai_dang_lam %}
+                    <button type="button" class="btn btn-warning" onclick="attemptStart()">
+                        TIẾP TỤC LÀM BÀI
+                    </button>
+                {% else %}
+                    <button type="button" class="btn" onclick="attemptStart()">
+                        BẮT ĐẦU LÀM BÀI
+                    </button>
+                {% endif %}
             </form>
         </div>
     </section>

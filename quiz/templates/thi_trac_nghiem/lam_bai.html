@@ -421,7 +421,7 @@
 
                 <nav class="nav">
                     <a href="{% url 'quiz:trang_chu' %}">Trang chủ</a>
-                    <a href="{% url 'quiz:danh_sach_de_thi' %}" class="active">Thực hiện đề thi</a>
+                    <a href="#" class="active">Thực hiện đề thi</a>
                     <a href="{% url 'quiz:tra_cuu_ket_qua' %}">Tra cứu kết quả</a>
                     <a href="{% url 'quiz:logout' %}">Đăng xuất</a>
                 </nav>
@@ -433,9 +433,9 @@
 
             <div class="content">
                 <header class="top-header">
-                    <a class="back-link" href="#" onclick="window.history.back(); return false;">
+                    <a class="back-link" href="{% url 'quiz:trang_chu' %}" onclick="return confirm('Bạn có chắc chắn muốn rời đi? Bài làm vẫn sẽ tiếp tục đếm ngược.');">
                         <span aria-hidden="true">←</span>
-                        <span>Quay lại</span>
+                        <span>Quay lại Trang chủ</span>
                     </a>
 
                     <div class="header-right">
@@ -470,9 +470,10 @@
                                     <input type="radio"
                                            name="cauhoi_{{ item.id }}"
                                            value="{{ lc.id }}"
-                                           onchange="markDone({{ forloop.parentloop.counter }})">
+                                           onchange="markDone({{ forloop.parentloop.counter }})"
+                                           {% if lc.id in danh_sach_da_chon %}checked{% endif %}>
                                     <span class="opt-letter">
-                                        {% if forloop.counter == 1 %}A.{% elif forloop.counter == 2 %}B.{% elif forloop.counter == 3 %}C.{% elif forloop.counter == 4 %}D.{% elif forloop.counter == 5 %}E.{% elif forloop.counter == 6 %}F.{% elif forloop.counter == 7 %}G.{% elif forloop.counter == 8 %}H.{% elif forloop.counter == 9 %}I.{% elif forloop.counter == 10 %}J.{% else %}{{ forloop.counter }}.{% endif %}
+                                        {% if forloop.counter == 1 %}A.{% elif forloop.counter == 2 %}B.{% elif forloop.counter == 3 %}C.{% elif forloop.counter == 4 %}D.{% elif forloop.counter == 5 %}E.{% else %}{{ forloop.counter }}.{% endif %}
                                     </span>
                                     <span>{{ lc.noiDungLuaChon }}</span>
                                 </label>
@@ -518,6 +519,9 @@
         let hasSubmitted = false;
         let modalOkAction = null;
 
+        // ID bài thi hiện tại để gọi API lưu nháp
+        const maKetQua = "{{ ket_qua.id }}";
+
         function setActive(n) {
             document.querySelectorAll('.q-num').forEach(b => b.classList.remove('active'));
             const el = document.getElementById('nav_q_' + n);
@@ -551,7 +555,7 @@
             modalBox.classList.toggle('is-auto', mode === 'auto');
 
             if (mode === 'auto') {
-                titleEl.innerText = 'Bài thi của bạn đã được nộp tự động';
+                titleEl.innerText = 'Bài thi của bạn đã được nộp tự động do hết giờ';
                 cancelBtn.innerText = 'HỦY';
                 okBtn.innerText = 'XEM KẾT QUẢ';
                 okBtn.classList.remove('btn-ok-danger');
@@ -567,8 +571,9 @@
             }
         }
 
-        // CẬP NHẬT: de_thi.thoiGianLamBai
-        let seconds = {{ de_thi.thoiGianLamBai }} * 60;
+        // ĐỒNG HỒ ĐẾM NGƯỢC
+        let seconds = {{ thoi_gian_con_lai }};
+
         const timerInterval = setInterval(() => {
             const h = Math.floor(seconds / 3600);
             const m = Math.floor((seconds % 3600) / 60);
@@ -613,14 +618,58 @@
             openModal('auto');
         }
 
-        setActive(1);
+        // KHỞI TẠO TRẠNG THÁI BAN ĐẦU
+        document.addEventListener("DOMContentLoaded", function() {
+            setActive(1);
 
+            // Tự động tô màu xanh (done) ở danh sách câu hỏi cho những câu đã tick sẵn
+            document.querySelectorAll('.question-block').forEach((block, index) => {
+                if (block.querySelector('input[type="radio"]:checked')) {
+                    markDone(index + 1);
+                }
+            });
+        });
+
+        // Đóng modal bằng phím ESC
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeModal();
         });
 
         document.getElementById('modalOkBtn').addEventListener('click', () => {
             if (typeof modalOkAction === 'function') modalOkAction();
+        });
+
+        // API LƯU NHÁP NGẦM KHI CHỌN ĐÁP ÁN (AUTO-SAVE)
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const apiUrl = "{% url 'quiz:api_luu_nhap' ket_qua.id %}";
+
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const cauHoiId = this.name.split('_')[1];
+                const luaChonId = this.value;
+
+                fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        'cau_hoi_id': cauHoiId,
+                        'lua_chon_id': luaChonId
+                    })
+                })
+                .then(response => {
+                    if(!response.ok) {
+                        console.error("Lỗi khi lưu nháp! HTTP Status:", response.status);
+                    } else {
+                        console.log("Đã tự động lưu đáp án câu", cauHoiId);
+                    }
+                })
+                .catch(error => {
+                    console.error("Lỗi kết nối mạng:", error);
+                });
+            });
         });
     </script>
 </body>

@@ -1,18 +1,19 @@
+from datetime import timedelta
+import json as thu_vien_json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.db import transaction
-from django.db.models import Avg, Count
+from django.db.models import Avg, Case, When, Value, IntegerField, Count, Q, F
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.db.models.functions import Greatest
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import NguoiDung, DeThi, KetQuaThi, LuaChon, ChiTietBaiLam, Khoa, MonHoc, LopHoc, NganHangCauHoi, CauHoi
 
 
-# ==========================================
-# 1. AUTHENTICATION (Chuẩn Django)
-# ==========================================
 def user_login(request):
     if request.method == 'POST':
         email_input = request.POST.get('email')
@@ -22,8 +23,6 @@ def user_login(request):
         user = authenticate(request, email=email_input, password=matkhau_input)
 
         if user is not None:
-
-            # Nếu là Sinh viên / Giảng viên -> Cho phép vào Web
             login(request, user)
             return redirect('quiz:trang_chu')
         else:
@@ -58,7 +57,6 @@ def user_register(request):
         is_student = True if role_choice == 'hoc' else False
 
         try:
-            # Dùng create_user để mật khẩu được mã hóa an toàn
             user = NguoiDung.objects.create_user(
                 username=email, email=email, password=mat_khau,
                 ho_ten=ho_ten, is_teacher=is_teacher, is_student=is_student
@@ -75,22 +73,43 @@ def recover_password(request):
     return render(request, 'thi_trac_nghiem/khoi_phuc_mat_khau.html')
 
 
-# ==========================================
 # 2. TRANG CHỦ
-# ==========================================
 @login_required(login_url='quiz:login')
 def trang_chu(request):
     user = request.user
     context = {'user': user}
 
     if user.is_teacher:
-        context['tong_de_thi'] = DeThi.objects.filter(nguoiTao=user).count()
-        context['de_dang_mo'] = DeThi.objects.filter(nguoiTao=user, trangThai='DANG_THI').count()
-        context['tong_sinh_vien'] = NguoiDung.objects.filter(is_student=True).count()
+
+        de_thi_cua_gv = DeThi.objects.filter(nguoiTao=user)
+
+        context['tong_de_thi'] = de_thi_cua_gv.count()
+        context['de_dang_mo'] = de_thi_cua_gv.filter(trangThai='DANG_THI').count()
+
+        context['tong_sinh_vien'] = NguoiDung.objects.filter(
+            is_student=True,
+            cac_lop_dang_hoc__giangVien=user
+        ).distinct().count()
+
         context['tong_luot_lam'] = KetQuaThi.objects.filter(deThi__nguoiTao=user).count()
+
     else:
-        # Tìm các đề thi thuộc các lớp sinh viên đang học
-        cac_de_thi = DeThi.objects.filter(lopHoc__danhSachSinhVien=user)
+        #Sinh viên chỉ nhìn thấy đề thi có trạng thái cho phép
+        cac_de_thi = DeThi.objects.filter(
+            lopHoc__danhSachSinhVien=user,
+            trangThai__in=['DANG_THI', 'DA_CONG_BO', 'KET_THUC']
+        )
+
+        #sắp xếp
+        cac_de_thi = cac_de_thi.annotate(
+            uu_tien_trang_thai=Case(
+                When(trangThai='DANG_THI', then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField(),
+            )
+        ).order_by('uu_tien_trang_thai', 'thoiGianKetThuc')
+
+        # Thống kê
         context['tong_bai_thi'] = cac_de_thi.count()
 
         da_lam_count = KetQuaThi.objects.filter(sinhVien=user).values('deThi').distinct().count()
@@ -100,26 +119,36 @@ def trang_chu(request):
         context['diem_tb'] = round(diem_avg, 1) if diem_avg else 0
         context['chua_lam'] = max(0, context['tong_bai_thi'] - da_lam_count)
 
-        context['ds_de_thi'] = cac_de_thi[:5]  # Hiển thị 5 đề mới nhất
+        # Hiện 5 đề thi
+        context['ds_de_thi'] = cac_de_thi[:5]
 
     return render(request, 'thi_trac_nghiem/trang_chu.html', context)
 
 
-# ==========================================
-# 3. LUỒNG THI TRẮC NGHIỆM (SINH VIÊN)
-# ==========================================
+
+# 3. THỰC HỆN ĐỀ THI
+
 @login_required(login_url='quiz:login')
 def thuc_hien_de_thi(request):
     user = request.user
-    # Lấy các đề thi thuộc lớp mà sinh viên tham gia
-    ds_de_thi = DeThi.objects.filter(lopHoc__danhSachSinhVien=user)
 
-    for de in ds_de_thi:
-        # Lấy số lượt đã thi của user này
-        so_luot_da_thi = KetQuaThi.objects.filter(sinhVien=user, deThi=de).count()
-        de.so_luot_con_lai = max(0, de.soLanLamToiDa - so_luot_da_thi)
+    ds_de_thi = DeThi.objects.filter(
+        lopHoc__danhSachSinhVien=user,
+        trangThai__in=['DANG_THI', 'DA_CONG_BO', 'KET_THUC']  #Lọc trạng thái cho phép hiển thị
+    ).annotate(
+        so_luot_da_thi=Count('ketquathi', filter=Q(ketquathi__sinhVien=user)),
 
-    return render(request, 'thi_trac_nghiem/danh_sach_bai_thi.html', {
+        so_luot_con_lai=Greatest(0, F('soLanLamToiDa') - F('so_luot_da_thi'), output_field=IntegerField()),
+
+        #sắp xếp ưu tiên
+        uu_tien_trang_thai=Case(
+            When(trangThai='DANG_THI', then=Value(0)),
+            default=Value(1),
+            output_field=IntegerField(),
+        )
+    ).order_by('uu_tien_trang_thai', 'thoiGianKetThuc')
+
+    return render(request, 'quiz/danh_sach_bai_thi.html', {
         'user': user,
         'ds_de_thi': ds_de_thi,
     })
@@ -127,98 +156,221 @@ def thuc_hien_de_thi(request):
 
 @login_required(login_url='quiz:login')
 def xac_nhan_thi(request, ma_de_thi):
-    de_thi = get_object_or_404(DeThi, pk=ma_de_thi)
-    da_lam = KetQuaThi.objects.filter(sinhVien=request.user, deThi=de_thi).count()
+    user = request.user
+
+    # Chỉ lấy đề ở trạng thái DANG_THI
+    de_thi = get_object_or_404(
+        DeThi,
+        pk=ma_de_thi,
+        lopHoc__danhSachSinhVien=user,
+        trangThai='DANG_THI'
+    )
+
+    # Kiểm tra thời gian kết thúc của toàn bộ đề thi
+    if de_thi.thoiGianKetThuc and timezone.now() > de_thi.thoiGianKetThuc:
+        return HttpResponseForbidden("Đề thi này đã quá hạn đóng cửa.")
+
+    # Đếm số lượt đã làm
+    da_lam = KetQuaThi.objects.filter(sinhVien=user, deThi=de_thi).count()
     so_lan_con_lai = max(0, de_thi.soLanLamToiDa - da_lam)
 
+    # Kiểm tra xem có bài nào đang làm dở không
+    bai_dang_lam = KetQuaThi.objects.filter(
+        sinhVien=user,
+        deThi=de_thi,
+        thoiGianNopBai__isnull=True
+    ).order_by('-thoiGianBatDau').first()
+
+    co_bai_dang_lam = False
+    if bai_dang_lam:
+        het_han_luc = bai_dang_lam.thoiGianBatDau + timedelta(minutes=de_thi.thoiGianLamBai)
+        if timezone.now() < het_han_luc:
+            co_bai_dang_lam = True
+
     context = {
-        'user': request.user,
+        'user': user,
         'de_thi': de_thi,
         'so_cau': de_thi.danhSachCauHoi.count(),
         'so_lan_con_lai': so_lan_con_lai,
+        'co_bai_dang_lam': co_bai_dang_lam,
     }
     return render(request, 'thi_trac_nghiem/xac_nhan_thi.html', context)
 
 
 @login_required(login_url='quiz:login')
 def bat_dau_thi(request, ma_de_thi):
-    de_thi = get_object_or_404(DeThi, pk=ma_de_thi)
-    so_lan_da_lam = KetQuaThi.objects.filter(sinhVien=request.user, deThi=de_thi).count()
+    user = request.user
+
+    de_thi = get_object_or_404(
+        DeThi,
+        pk=ma_de_thi,
+        lopHoc__danhSachSinhVien=user,
+        trangThai='DANG_THI'
+    )
+
+    # KIỂM TRA LOGIC RỚT MẠNG
+    bai_dang_lam = KetQuaThi.objects.filter(
+        sinhVien=user,
+        deThi=de_thi,
+        thoiGianNopBai__isnull=True
+    ).order_by('-thoiGianBatDau').first()
+
+    if bai_dang_lam:
+
+        het_han_luc = bai_dang_lam.thoiGianBatDau + timedelta(minutes=de_thi.thoiGianLamBai)
+
+        if timezone.now() < het_han_luc:
+            return redirect('quiz:hien_thi_de_thi', ma_ket_qua=bai_dang_lam.id)
+        else:
+
+            bai_dang_lam.thoiGianNopBai = het_han_luc
+            bai_dang_lam.save()
+
+    # KIỂM TRA SỐ LƯỢT TRƯỚC KHI CHO TẠO MỚI
+    so_lan_da_lam = KetQuaThi.objects.filter(sinhVien=user, deThi=de_thi).count()
 
     if so_lan_da_lam >= de_thi.soLanLamToiDa:
         return HttpResponseForbidden("Bạn đã hết lượt làm bài.")
 
-    # Không cần tính ID thủ công, Django tự động làm
-    ket_qua = KetQuaThi.objects.create(
-        sinhVien=request.user,
+    ket_qua_moi = KetQuaThi.objects.create(
+        sinhVien=user,
         deThi=de_thi,
         diemSo=0.0,
-        thoiGianBatDau=timezone.now()
+        thoiGianBatDau=timezone.now(),
+        thoiGianNopBai=None
     )
-    return redirect('quiz:hien_thi_de_thi', ma_ket_qua=ket_qua.id)
+
+    return redirect('quiz:hien_thi_de_thi', ma_ket_qua=ket_qua_moi.id)
 
 
 @login_required(login_url='quiz:login')
 def hien_thi_de_thi(request, ma_ket_qua):
-    ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua)
+    ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua, sinhVien=request.user)
+
+    if ket_qua.thoiGianNopBai is not None:
+        return redirect('quiz:xem_lai_bai_lam', ma_ket_qua=ket_qua.id)
+
     de_thi = ket_qua.deThi
 
-    # Lấy danh sách câu hỏi qua trường ManyToMany (danhSachCauHoi)
+    thoi_han_chot = ket_qua.thoiGianBatDau + timedelta(minutes=de_thi.thoiGianLamBai)
+    thoi_gian_con_lai = int((thoi_han_chot - timezone.now()).total_seconds())
+
+    if thoi_gian_con_lai < 0:
+        thoi_gian_con_lai = 0
+
     danh_sach_cau_hoi = de_thi.danhSachCauHoi.all().prefetch_related('cac_lua_chon')
+    danh_sach_da_chon = ChiTietBaiLam.objects.filter(ketQua=ket_qua).values_list('luaChonDaChon_id', flat=True)
 
     return render(request, 'thi_trac_nghiem/lam_bai.html', {
         'ket_qua': ket_qua,
         'de_thi': de_thi,
         'danh_sach_cau_hoi': danh_sach_cau_hoi,
+        'danh_sach_da_chon': list(danh_sach_da_chon),
+        'thoi_gian_con_lai': thoi_gian_con_lai,
     })
 
 
 @login_required(login_url='quiz:login')
 def nop_bai(request, ma_ket_qua):
-    if request.method != 'POST': return redirect('quiz:trang_chu')
+    if request.method != 'POST':
+        return redirect('quiz:trang_chu')
 
-    ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua)
+    ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua, sinhVien=request.user)
+
+    if ket_qua.thoiGianNopBai is not None:
+        return redirect('quiz:xem_lai_bai_lam', ma_ket_qua=ket_qua.id)
+
     de_thi = ket_qua.deThi
-    tong_so_cau = de_thi.danhSachCauHoi.count()
-    diem_moi_cau = 10.0 / tong_so_cau if tong_so_cau > 0 else 0
-    so_cau_dung = 0
 
     with transaction.atomic():
+        danh_sach_cau_hoi_id = []
+        danh_sach_lua_chon_id = []
+
         for key, value in request.POST.items():
-            if key.startswith('cauhoi_'):
+            if key.startswith('cauhoi_') and value.isdigit():
                 cau_hoi_id = int(key.split('_')[1])
                 lua_chon_id = int(value)
 
-                cau_hoi = get_object_or_404(CauHoi, pk=cau_hoi_id)
-                lua_chon = get_object_or_404(LuaChon, pk=lua_chon_id)
+                danh_sach_cau_hoi_id.append(cau_hoi_id)
+                danh_sach_lua_chon_id.append(lua_chon_id)
 
-                ChiTietBaiLam.objects.create(
-                    ketQua=ket_qua,
-                    cauHoi=cau_hoi,
-                    luaChonDaChon=lua_chon
-                )
-                if lua_chon.dapAnDung:
-                    so_cau_dung += 1
+        cac_lua_chon_da_tick = LuaChon.objects.filter(id__in=danh_sach_lua_chon_id)
+
+        so_cau_dung = cac_lua_chon_da_tick.filter(dapAnDung=True).count()
+
+        tong_so_cau = de_thi.danhSachCauHoi.count()
+        diem_moi_cau = 10.0 / tong_so_cau if tong_so_cau > 0 else 0
 
         ket_qua.diemSo = round(so_cau_dung * diem_moi_cau, 2)
         ket_qua.thoiGianNopBai = timezone.now()
         ket_qua.save()
 
-    return render(request, 'thi_trac_nghiem/ket_qua.html', {'ket_qua': ket_qua})
+        ChiTietBaiLam.objects.filter(ketQua=ket_qua).delete()
 
+        danh_sach_chi_tiet = [
+            ChiTietBaiLam(
+                ketQua=ket_qua,
+                cauHoi_id=c_id,
+                luaChonDaChon_id=l_id
+            ) for c_id, l_id in zip(danh_sach_cau_hoi_id, danh_sach_lua_chon_id)
+        ]
+
+        ChiTietBaiLam.objects.bulk_create(danh_sach_chi_tiet)
+
+    return render(request, 'thi_trac_nghiem/ket_qua.html', {'ket_qua': ket_qua})
 
 @login_required(login_url='quiz:login')
 def tra_cuu_ket_qua(request):
-    ds_ket_qua = KetQuaThi.objects.filter(sinhVien=request.user).order_by('-thoiGianNopBai')
-    return render(request, 'thi_trac_nghiem/tra_cuu_ket_qua.html', {'user': request.user, 'ds_ket_qua': ds_ket_qua})
+    ds_ket_qua = KetQuaThi.objects.filter(
+        sinhVien=request.user,
+        thoiGianNopBai__isnull=False
+    ).order_by('-thoiGianNopBai')
+
+    return render(request, 'thi_trac_nghiem/tra_cuu_ket_qua.html', {
+        'user': request.user,
+        'ds_ket_qua': ds_ket_qua
+    })
 
 
 @login_required(login_url='quiz:login')
 def xem_lai_bai_lam(request, ma_ket_qua):
-    ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua)
-    chi_tiet = ChiTietBaiLam.objects.filter(ketQua=ket_qua).select_related('cauHoi', 'luaChonDaChon')
-    return render(request, 'thi_trac_nghiem/xem_lai_bai.html', {'ket_qua': ket_qua, 'chi_tiet': chi_tiet})
+    ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua, sinhVien=request.user)
 
+    if not ket_qua.deThi.choPhepXemKetQua:
+        return HttpResponseForbidden("Giảng viên không cho phép xem chi tiết đáp án của đề thi này.")
+
+    chi_tiet = ChiTietBaiLam.objects.filter(ketQua=ket_qua).select_related('cauHoi', 'luaChonDaChon')
+
+    return render(request, 'thi_trac_nghiem/xem_lai_bai.html', {
+        'ket_qua': ket_qua,
+        'chi_tiet': chi_tiet
+    })
+
+@csrf_exempt
+@login_required(login_url='quiz:login')
+def api_luu_nhap(request, ma_ket_qua):
+    if request.method == 'POST':
+        try:
+            data = thu_vien_json.loads(request.body)
+
+            cau_hoi_id = int(data.get('cau_hoi_id'))
+            lua_chon_id = int(data.get('lua_chon_id'))
+
+            ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua, sinhVien=request.user)
+
+            ChiTietBaiLam.objects.update_or_create(
+                ketQua=ket_qua,
+                cauHoi_id=cau_hoi_id,
+                defaults={'luaChonDaChon_id': lua_chon_id}
+            )
+
+            return JsonResponse({'status': 'ok'})
+
+        except Exception as e:
+            print(f"LỖI: {str(e)}")
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+    return JsonResponse({'status': 'invalid_method'}, status=400)
 
 # ==========================================
 # 4. LUỒNG QUẢN LÝ (GIẢNG VIÊN)

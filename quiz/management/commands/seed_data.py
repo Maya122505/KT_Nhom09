@@ -9,10 +9,9 @@ from quiz.models import (
 
 
 class Command(BaseCommand):
-    help = 'Tạo bộ dữ liệu test hoàn hảo cho kịch bản sinh viên Nguyễn Thị Lê Uyên'
+    help = 'Tạo mới dữ liệu'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write(self.style.WARNING("Đang dọn dẹp dữ liệu cũ (Giữ lại Admin)..."))
         ChiTietBaiLam.objects.all().delete()
         KetQuaThi.objects.all().delete()
         DeThi.objects.all().delete()
@@ -26,29 +25,41 @@ class Command(BaseCommand):
 
         now = timezone.now()
 
-        # ==========================================
         # 1. TẠO KHOA & MÔN HỌC
-        # ==========================================
         khoa_tkth = Khoa.objects.create(tenKhoa="Thống Kê Tin Học")
         danh_sach_ten_mon = ["Cơ sở dữ liệu", "Kiểm thử phần mềm", "Cơ sở lập trình bằng Python"]
         mon_hocs = [MonHoc.objects.create(tenMonHoc=ten, khoa=khoa_tkth) for ten in danh_sach_ten_mon]
 
-        # ==========================================
-        # 2. TẠO GIẢNG VIÊN & SINH VIÊN (Uyên)
-        # ==========================================
+
+        # 2. TẠO GIẢNG VIÊN, SINH VIÊN
+
         giang_vien = NguoiDung.objects.create_user(
             username="giangvien@gmail.com", email="giangvien@gmail.com", password="123",
             ho_ten="TS. Trần Văn Bình", is_teacher=True, is_student=False, khoa=khoa_tkth
         )
 
-        sinh_vien_uyen = NguoiDung.objects.create_user(
-            username="uyenntl@gmail.com", email="uyenntl@gmail.com", password="123",
-            ho_ten="Nguyễn Thị Lê Uyên", is_teacher=False, is_student=True, khoa=khoa_tkth
-        )
+        # Danh sách sinh viên
+        thong_tin_sinh_vien = [
+            {"ho_ten": "Lê Nguyễn Bảo Trúc", "email": "truclnb@gmail.com"},
+            {"ho_ten": "Đinh Thị Thức", "email": "thucdt@gmail.com"},
+            {"ho_ten": "Mai Thị Thu Thủy", "email": "thuyntt@gmail.com"},
+            {"ho_ten": "Nguyễn Thị Lê Uyên", "email": "uyenntl@gmail.com"},
+            {"ho_ten": "Nguyễn Hoàng Luy", "email": "luynh@gmail.com"}
+        ]
 
-        # ==========================================
+        danh_sach_sinh_vien = []
+        for info in thong_tin_sinh_vien:
+            sv = NguoiDung.objects.create_user(
+                username=info["email"],
+                email=info["email"],
+                password="123",  # Set chung mật khẩu là 123
+                ho_ten=info["ho_ten"],
+                is_teacher=False,
+                is_student=True,
+                khoa=khoa_tkth
+            )
+            danh_sach_sinh_vien.append(sv)
         # 3. TẠO NGÂN HÀNG CÂU HỎI (Dữ liệu thực tế)
-        # ==========================================
         data_cau_hoi = {
             "Cơ sở dữ liệu": [
                 ("Lệnh nào dùng để thêm dữ liệu vào bảng?", "INSERT INTO", "ADD DATA", "UPDATE", "CREATE ROW"),
@@ -83,7 +94,7 @@ class Command(BaseCommand):
             cau_hoi_mau = data_cau_hoi[mon.tenMonHoc]
             for i in range(15):
                 cau_mau = cau_hoi_mau[i % 3]
-                ch = CauHoi.objects.create(nganHang=nh, noiDungCauHoi=f"{cau_mau[0]} (Biến thể {i + 1})",
+                ch = CauHoi.objects.create(nganHang=nh, noiDungCauHoi=cau_mau[0],
                                            nguoiTao=giang_vien)
 
                 dap_ans = [(cau_mau[1], True), (cau_mau[2], False), (cau_mau[3], False), (cau_mau[4], False)]
@@ -91,20 +102,14 @@ class Command(BaseCommand):
                 for noidung_da, is_dung in dap_ans:
                     LuaChon.objects.create(cauHoi=ch, noiDungLuaChon=noidung_da, dapAnDung=is_dung)
 
-        # ==========================================
-        # 4. TẠO LỚP HỌC (Uyên tham gia tất cả các môn)
-        # ==========================================
+        # 4. TẠO LỚP HỌC
         lop_hocs = []
         for mon in mon_hocs:
             lop = LopHoc.objects.create(maLop=f"{mon.tenMonHoc}_01", monHoc=mon, giangVien=giang_vien)
-            lop.danhSachSinhVien.add(sinh_vien_uyen)
+            lop.danhSachSinhVien.add(*danh_sach_sinh_vien)
             lop_hocs.append(lop)
 
-        # ==========================================
         # 5. TẠO ĐỀ THI (CÓ THÊM MẬT KHẨU)
-        # ==========================================
-
-        # Cập nhật hàm tạo đề để nhận thêm tham số mat_khau
         def tao_de_thi(lop, ten_de, trang_thai, thoi_gian_lam, so_lan_lam, thoi_gian_bat_dau, thoi_gian_ket_thuc,
                        mat_khau=""):
             de = DeThi.objects.create(
@@ -114,7 +119,7 @@ class Command(BaseCommand):
                 thoiGianKetThuc=thoi_gian_ket_thuc,
                 thoiGianLamBai=thoi_gian_lam,
                 soLanLamToiDa=so_lan_lam,
-                matKhauDeThi=mat_khau,  # Nhận mật khẩu tại đây
+                matKhauDeThi=mat_khau,
                 choPhepXemKetQua=True,
                 trangThai=trang_thai,
                 nguoiTao=giang_vien
@@ -128,31 +133,22 @@ class Command(BaseCommand):
         lop_ktpm = lop_hocs[1]
         lop_python = lop_hocs[2]
 
-        # --- A. 3 ĐỀ ĐANG MỞ (DANG_THI) ---
-        tao_de_thi(lop_csdl, "Bài tập chương 1 - Cơ sở dữ liệu", 'DANG_THI', 15, 3, now - timedelta(days=1),
+        # ĐỀ ĐANG MỞ (DANG_THI)
+        tao_de_thi(lop_csdl, "Bài tập chương 1 - Cơ sở dữ liệu", 'DANG_THI', 10, 10, now - timedelta(days=1),
                    now + timedelta(days=5))
-        tao_de_thi(lop_ktpm, "Bài tập thực hành - Kiểm thử phần mềm", 'DANG_THI', 30, 5, now - timedelta(hours=2),
+        tao_de_thi(lop_ktpm, "Bài tập thực hành - Kiểm thử phần mềm", 'DANG_THI', 5, 5, now - timedelta(hours=2),
                    now + timedelta(days=7))
-
-        # THÊM MỚI: 1 đề Python đang mở và CÓ PASS "123456"
-        tao_de_thi(lop_python, "Kiểm tra định kỳ - Lập trình Python", 'DANG_THI', 20, 2, now - timedelta(minutes=30),
+        tao_de_thi(lop_python, "Kiểm tra định kỳ - Lập trình Python", 'DANG_THI', 3, 2, now - timedelta(minutes=30),
                    now + timedelta(days=2), mat_khau="123456")
 
-        # --- B. 2 ĐỀ ĐÃ QUÁ HẠN (KET_THUC) ---
+        #ĐỀ ĐÃ QUÁ HẠN (KET_THUC)
         tao_de_thi(lop_python, "Kỳ thi giữa kỳ - Lập trình Python", 'KET_THUC', 45, 1, now - timedelta(days=10),
                    now - timedelta(days=2))
         tao_de_thi(lop_csdl, "Kỳ thi thực hành - Cơ sở dữ liệu", 'KET_THUC', 60, 1, now - timedelta(days=15),
                    now - timedelta(days=5))
 
-        # --- C. 2 ĐỀ ĐÃ ĐÓNG (BAN_NHAP / HUY) ---
+        #ĐỀ ĐÃ ĐÓNG (BAN_NHAP / HUY)
         tao_de_thi(lop_ktpm, "Kỳ thi cuối kỳ - Kiểm thử phần mềm", 'BAN_NHAP', 90, 1, now + timedelta(days=10),
                    now + timedelta(days=11))
         tao_de_thi(lop_python, "Bài tập nâng cao - Lập trình Python", 'HUY', 20, 2, now - timedelta(days=1),
                    now + timedelta(days=5))
-
-        self.stdout.write(self.style.SUCCESS("\n🎉 TẠO KỊCH BẢN TEST CHO SINH VIÊN THÀNH CÔNG! 🎉"))
-        self.stdout.write(self.style.WARNING("=== TÀI KHOẢN ĐĂNG NHẬP ==="))
-        self.stdout.write("👨‍🎓 Sinh viên: uyenntl@gmail.com | Pass: 123")
-        self.stdout.write("👨‍🏫 Giảng viên: giangvien@gmail.com | Pass: 123")
-        self.stdout.write(self.style.ERROR("🔑 Mật khẩu bài thi Python: 123456"))
-        self.stdout.write(self.style.WARNING("==========================="))
