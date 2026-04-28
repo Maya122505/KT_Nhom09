@@ -37,7 +37,7 @@
     <div class="container">
         <div style="margin-bottom:20px; display:flex; align-items:center; gap:15px;">
             <button onclick="history.back()" style="background:#64748b; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">← Quay lại</button>
-            <h2 style="margin:0; font-size:18px;">Chi tiết bài làm: {{ ket_qua.maNguoiHoc.hoTen }}</h2>
+            <h2 style="margin:0; font-size:18px;">Chi tiết bài làm: {{ ket_qua.sinhVien.ho_ten }}</h2>
         </div>
 
         <div class="table-box">
@@ -55,15 +55,27 @@
                     {% for ct in chi_tiet %}
                     <tr>
                         <td>{{ forloop.counter }}</td>
-                        <td style="font-weight: 500; max-width: 300px;">{{ ct.maCauHoi.noiDungCauHoi }}</td>
-                        <td>{{ ct.maLuaChonDaChon.noiDungLuaChon }}</td>
+
+                        <td style="font-weight: 500; max-width: 300px;">{{ ct.cauHoi.noiDungCauHoi }}</td>
+
+                        <td>
+                            {% if ct.luaChonDaChon %}
+                                {{ ct.luaChonDaChon.noiDungLuaChon }}
+                            {% else %}
+                                <span style="color: #94a3b8; font-style: italic;">(Bỏ trống)</span>
+                            {% endif %}
+                        </td>
+
                         <td style="color: #10b981; font-weight: 600;">
-                            {% for choice in ct.maCauHoi.luachon_set.all %}
-                                {% if choice.dapAnDung %}{{ choice.noiDungLuaChon }}{% endif %}
+                            {% for choice in ct.cauHoi.cac_lua_chon.all %}
+                                {% if choice.dapAnDung %}
+                                    {{ choice.noiDungLuaChon }}
+                                {% endif %}
                             {% endfor %}
                         </td>
+
                         <td>
-                            {% if ct.maLuaChonDaChon.dapAnDung %}
+                            {% if ct.luaChonDaChon and ct.luaChonDaChon.dapAnDung %}
                                 <span class="status-badge status-true">Đúng</span>
                             {% else %}
                                 <span class="status-badge status-false">Sai</span>

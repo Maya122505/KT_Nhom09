@@ -239,10 +239,10 @@
                         <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                     </svg>
                 </button>
-                <div class="avatar" aria-hidden="true">{{ ket_qua.maNguoiHoc.hoTen|default:"T"|first|upper }}</div>
+                <div class="avatar" aria-hidden="true">{{ ket_qua.sinhVien.ho_ten|default:"N"|first|upper }}</div>
                 <div class="user-box">
-                    <div class="user-name">{{ ket_qua.maNguoiHoc.hoTen|default:"Học sinh" }}</div>
-                    <div class="user-role">{{ ket_qua.maNguoiHoc.vaiTro|default:"Học sinh" }}</div>
+                    <div class="user-name">{{ ket_qua.sinhVien.ho_ten|default:"Người học" }}</div>
+                    <div class="user-role">Người học</div>
                 </div>
             </div>
         </header>
@@ -251,11 +251,11 @@
             <h1 class="crumb">
                 <span>Danh sách các bài thi đã làm</span>
                 <span class="sep">→</span>
-                <span>{{ ket_qua.maDeThi.tenDeThi }}</span>
+                <span>{{ ket_qua.deThi.tenDeThi }}</span>
             </h1>
 
             <div class="card">
-                <p class="info-line">Tên đề: <b>{{ ket_qua.maDeThi.tenDeThi }}</b></p>
+                <p class="info-line">Tên đề: <b>{{ ket_qua.deThi.tenDeThi }}</b></p>
                 <p class="info-line">Ngày thi: <b>{{ ket_qua.thoiGianNopBai|date:"d/m/Y" }}</b></p>
                 <p class="info-line">Điểm: <b>{{ ket_qua.diemSo }}</b> / 10</p>
             </div>
@@ -263,17 +263,23 @@
             <div class="card">
                 {% for item in chi_tiet %}
                 <div class="q-item">
-                    <p class="q-title">Câu {{ forloop.counter }}: {{ item.maCauHoi.noiDungCauHoi }}</p>
+                    <p class="q-title">Câu {{ forloop.counter }}: {{ item.cauHoi.noiDungCauHoi }}</p>
 
-                    <div class="line pick {% if item.maLuaChonDaChon.dapAnDung %}ok{% else %}bad{% endif %}">
-                        <span class="mark" aria-hidden="true">{% if item.maLuaChonDaChon.dapAnDung %}✓{% else %}✗{% endif %}</span>
-                        <span><b>Bạn chọn:</b> {{ item.maLuaChonDaChon.noiDungLuaChon }}</span>
+                    <div class="line pick {% if item.luaChonDaChon and item.luaChonDaChon.dapAnDung %}ok{% else %}bad{% endif %}">
+                        <span class="mark" aria-hidden="true">{% if item.luaChonDaChon and item.luaChonDaChon.dapAnDung %}✓{% else %}✗{% endif %}</span>
+                        <span><b>Bạn chọn:</b>
+                            {% if item.luaChonDaChon %}
+                                {{ item.luaChonDaChon.noiDungLuaChon }}
+                            {% else %}
+                                <i style="color: #9ca3af; font-size: 16px;">(Bỏ trống)</i>
+                            {% endif %}
+                        </span>
                     </div>
 
                     <div class="line answer">
                         <span class="mark" aria-hidden="true"></span>
                         <span><b>Đáp án đúng:</b>
-                            {% for choice in item.maCauHoi.luachon_set.all %}
+                            {% for choice in item.cauHoi.cac_lua_chon.all %}
                                 {% if choice.dapAnDung %}{{ choice.noiDungLuaChon }}{% endif %}
                             {% endfor %}
                         </span>
@@ -287,4 +293,3 @@
     </main>
 </body>
 </html>
-

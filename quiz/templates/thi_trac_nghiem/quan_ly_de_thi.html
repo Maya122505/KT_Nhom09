@@ -5,7 +5,6 @@
     <title>Quản lý đề thi - Q-TEST</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* GIỮ NGUYÊN TOÀN BỘ STYLE CỦA UYÊN */
         :root { --blue: #1e5bb8; --bg: #f4f7fe; --text: #1b2559; --gray: #64748b; --green-border: #10b981; }
         body { font-family: 'Inter', sans-serif; margin: 0; display: flex; background: var(--bg); height: 100vh; overflow: hidden; }
         .sidebar { width: 240px; background: var(--blue); color: white; display: flex; flex-direction: column; }
@@ -46,7 +45,7 @@
     <div class="logo">Q - TEST</div>
     <a href="{% url 'quiz:trang_chu' %}" class="nav-link">Trang chủ</a>
     <a href="{% url 'quiz:quan_ly_de_thi' %}" class="nav-link active">Quản lý đề thi</a>
-    <a href="/quiz/quan-ly-ket-qua/" class="nav-link">Quản lý kết quả thi</a>
+    <a href="{% url 'quiz:ds_bai_thi_da_tao' %}" class="nav-link">Quản lý kết quả thi</a>
     <a href="{% url 'quiz:ngan_hang_cau_hoi' %}" class="nav-link">Ngân hàng câu hỏi</a>
     <a href="{% url 'quiz:logout' %}" class="nav-link" style="margin-top: auto;">Đăng xuất</a>
 </nav>
@@ -54,7 +53,7 @@
 <main class="main">
     <div class="header">
         <div style="color: #64748b; cursor: pointer;" onclick="location.href='{% url 'quiz:quan_ly_de_thi' %}'">← Quay lại danh sách</div>
-        <div style="font-weight: 600;">{{ user.hoTen }} <span style="font-weight: 400; font-size: 12px; display: block; text-align: right;">Giáo viên</span></div>
+        <div style="font-weight: 600;">{{ user.ho_ten }} <span style="font-weight: 400; font-size: 12px; display: block; text-align: right;">Người dạy</span></div>
     </div>
 
     <div class="container" id="viewList">
@@ -66,27 +65,32 @@
                 {% for m in ds_mon %}<option>{{ m.tenMonHoc }}</option>{% endfor %}
             </select>
             <button class="btn-blue">Tìm kiếm</button>
-            <button class="btn-add" onclick="openStep(1)">+ Thêm mới</button>
+            <button class="btn-add" onclick="location.href='{% url 'quiz:tao_de_thi_moi' %}'">+ Thêm mới</button>
         </div>
 
         <div class="table-box">
             <table>
                 <thead>
-                    <tr><th>STT</th><th>Tên đề thi</th><th>Môn học</th><th>Thời gian</th><th>Số câu hỏi</th><th>Trạng thái</th></tr>
+                    <tr><th>STT</th><th>Tên đề thi</th><th>Lớp - Môn</th><th>Thời gian</th><th>Số câu</th><th>Trạng thái</th></tr>
                 </thead>
              <tbody>
     {% for de in ds_de_thi %}
-    <tr style="cursor: pointer;">
-        <td onclick="window.location.href='?id_de={{ de.maDeThi }}'">{{ forloop.counter|stringformat:"03d" }}</td>
-        <td onclick="window.location.href='?id_de={{ de.maDeThi }}'" style="font-weight: 600; color: #1e5bb8;">{{ de.tenDeThi }}</td>
-        <td onclick="window.location.href='?id_de={{ de.maDeThi }}'">{{ de.maMonHoc.tenMonHoc }}</td>
-        <td onclick="window.location.href='?id_de={{ de.maDeThi }}'">{{ de.thoiGian }} phút</td>
-        <td onclick="window.location.href='?id_de={{ de.maDeThi }}'">5 câu</td>
+    <tr style="cursor: pointer;" onclick="window.location.href='?id_de={{ de.id }}'">
+        <td>{{ forloop.counter|stringformat:"03d" }}</td>
+        <td style="font-weight: 600; color: #1e5bb8;">{{ de.tenDeThi }}</td>
+        <td>{{ de.lopHoc.maLop }} - {{ de.lopHoc.monHoc.tenMonHoc }}</td>
+        <td>{{ de.thoiGianLamBai }} phút</td>
+        <td>{{ de.danhSachCauHoi.count }} câu</td>
         <td>
-            <span class="status-badge status-open"
-                  onclick="window.location.href='?id_de={{ de.maDeThi }}'; event.stopPropagation();">
-                Đang mở
-            </span>
+            {% if de.trangThai == 'DANG_THI' %}
+                <span class="status-badge status-open">Đang diễn ra</span>
+            {% elif de.trangThai == 'DA_CONG_BO' %}
+                <span class="status-badge" style="background:#fef08a; color:#854d0e;">Đã công bố</span>
+            {% elif de.trangThai == 'KET_THUC' %}
+                <span class="status-badge status-closed">Đã kết thúc</span>
+            {% else %}
+                <span class="status-badge" style="background:#e2e8f0; color:#475569;">Bản nháp</span>
+            {% endif %}
         </td>
     </tr>
     {% empty %}
@@ -110,55 +114,47 @@
             <div style="display:flex; gap:30px; margin-bottom:20px; font-size:13px; border-bottom:1px solid #eee; padding-bottom:15px; flex-wrap: wrap;">
                 <span>Thời gian: <b id="prevTime"></b> phút</span>
                 <span>Tổng số câu: <b id="prevCount"></b></span>
-                <span>Tổng điểm: <b id="prevDiem">10.0 điểm</b></span>
                 <span>Môn học: <b id="prevMonHoc"></b></span>
-                <span>Số lần làm bài: <b id="prevSoLan"></b></span>
-                <span>Trạng thái: <b style="color:#10b981">Đang soạn thảo</b></span>
+                <span>Số lần làm tối đa: <b id="prevSoLan"></b></span>
             </div>
 
-<div id="questionsContainer">
-    {% for item in ds_cau_hoi %}
-    <div class="q-card">
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-            <span style="font-weight:700; color:var(--blue);">
-                Câu hỏi số {{ forloop.counter }}
-                <span style="cursor:pointer;" onclick="openEditPopup('{{ item.maCauHoi.noiDungCauHoi|escapejs }}')">📝</span>
-            </span>
-            <span style="color:var(--gray); font-size:11px;">Điểm: 2.0</span>
-        </div>
+            <div id="questionsContainer">
+                {% for item in ds_cau_hoi %}
+                <div class="q-card">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span style="font-weight:700; color:var(--blue);">
+                            Câu hỏi số {{ forloop.counter }}
+                        </span>
+                    </div>
 
-        <p style="font-weight:600; font-size: 15px; margin-bottom: 15px; color: #1b2559;">
-            {{ item.maCauHoi.noiDungCauHoi }}
-        </p>
+                    <p style="font-weight:600; font-size: 15px; margin-bottom: 15px; color: #1b2559;">
+                        {{ item.noiDungCauHoi }}
+                    </p>
 
-      <div class="options-list">
-    {% for choice in item.maCauHoi.luachon_set.all %}
-        <div class="ans-row {% if choice.dapAnDung %}ans-correct{% endif %}" style="margin-bottom: 5px; padding: 12px; border: 1px solid #f1f5f9; border-radius: 6px; cursor: default;">
-            <span style="font-weight: 500; color: #1b2559;">{{ choice.noiDungLuaChon }}</span>
-            {% if choice.dapAnDung %}
-                <span style="color: #10b981; font-size: 11px; margin-left: 10px; font-weight: 600;">(Đáp án đúng)</span>
-            {% endif %}
-        </div>
-    {% endfor %}
-</div>
-    </div>
-    {% empty %}
-    <p style="text-align: center; color: var(--gray); padding: 20px;">Không tìm thấy câu hỏi nào cho đề thi này.</p>
-    {% endfor %}
-</div>
+                    <div class="options-list">
+                        {% for choice in item.cac_lua_chon.all %}
+                        <div class="ans-row {% if choice.dapAnDung %}ans-correct{% endif %}" style="margin-bottom: 5px; padding: 12px; border: 1px solid #f1f5f9; border-radius: 6px; cursor: default;">
+                            <span style="font-weight: 500; color: #1b2559;">{{ choice.noiDungLuaChon }}</span>
+                            {% if choice.dapAnDung %}
+                                <span style="color: #10b981; font-size: 11px; margin-left: 10px; font-weight: 600;">(Đáp án đúng)</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <p style="text-align: center; color: var(--gray); padding: 20px;">Không tìm thấy câu hỏi nào cho đề thi này.</p>
+                {% endfor %}
+            </div>
 
-            <div style="text-align:right; margin-top:30px; display:flex; justify-content:flex-end; gap:10px;">
+            <div style="text-align:right; margin-top:30px; display:none;">
                 <button class="btn-blue" style="background:#ef4444;">Xoá đề thi</button>
                 <button class="btn-blue">Xác nhận tạo đề</button>
             </div>
         </div>
     </div>
 
-    <div id="step1" class="modal-overlay"><div class="modal-box"><h3 style="color: var(--blue); margin-top: 0; font-size: 16px;">Chọn file câu hỏi</h3><div style="display: flex; gap: 10px; margin-bottom: 15px;"><input type="text" id="popupSearchName" class="input-search" style="flex: 2;" placeholder="Tìm kiếm nội dung câu hỏi"><select id="popupSearchKhoa" class="select-filter" style="flex: 1;"><option value="">Khoa</option>{% for k in ds_khoa %}<option value="{{ k.tenKhoa }}">{{ k.tenKhoa }}</option>{% endfor %}</select><select id="popupSearchMon" class="select-filter" style="flex: 1;"><option value="">Môn</option>{% for m in ds_mon %}<option value="{{ m.tenMonHoc }}">{{ m.tenMonHoc }}</option>{% endfor %}</select><button class="btn-blue" onclick="filterBankTable()">Tìm kiếm</button></div><div style="border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden;"><table id="bankTable" style="margin-top: 0;"><thead><tr style="background: #f8fafc;"><th>ID</th><th>TÊN NGÂN HÀNG</th><th>KHOA</th><th>MÔN HỌC</th></tr></thead><tbody>{% for nh in ds_ngan_hang %}<tr onclick="selectBank('{{ nh.tenNganHang }}', '{{ nh.cauhoi_set.count }}', '{{ nh.maMonHoc.tenMonHoc }}')"><td>{{ forloop.counter|stringformat:"03d" }}</td><td style="font-weight: 700; color: var(--blue);">{{ nh.tenNganHang }}</td><td>{{ nh.maMonHoc.maKhoa.tenKhoa|default:"Thống kê - Tin học" }}</td><td>{{ nh.maMonHoc.tenMonHoc }}</td></tr>{% endfor %}</tbody></table></div><div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;"><button class="btn-blue" style="background:#e2e8f0; color:black;" onclick="closePop()">Huỷ</button><button class="btn-blue" onclick="openStep(2)">Tiếp tục</button></div></div></div>
-    <div id="step2" class="modal-overlay"><div class="modal-box" style="width: 550px;"><h3 style="color: var(--blue); margin-top: 0; font-size: 16px; border-bottom: 2px solid var(--blue); display: inline-block; padding-bottom: 5px;">Thông tin chung</h3><div class="form-grid" style="margin-top: 20px;"><div style="grid-column: span 2;"><label style="font-weight: 700; font-size: 12px;">Tên đề thi</label><input type="text" id="tenDe" class="input-q"></div><div><label style="font-weight: 700; font-size: 12px;">Môn học</label><input type="text" id="monHoc" class="input-q" readonly style="background: #f8fafc;"></div><div><label style="font-weight: 700; font-size: 12px;">Thời gian (phút)</label><input type="number" id="thoiGian" class="input-q" value="60"></div><div><label style="font-weight: 700; font-size: 12px;">Số câu hỏi (Tối đa: <span id="maxQ">0</span>)</label><input type="number" id="soCau" class="input-q"></div><div><label style="font-weight: 700; font-size: 12px;">Mật khẩu đề</label><input type="text" class="input-q" placeholder="(Tùy chọn)"></div><div><label style="font-weight: 700; font-size: 12px;">Số lần làm bài</label><input type="number" id="soLan" class="input-q" value="1"></div></div><div style="text-align: right; margin-top: 20px;"><button class="btn-blue" onclick="goToPreview()">Tiếp tục</button></div></div></div>
-    <div id="stepEdit" class="modal-overlay"><div class="modal-box"><h3 style="color: var(--blue); margin-top: 0; font-size: 16px; border-bottom: 2px solid var(--blue); display: inline-block; padding-bottom: 5px;">Chỉnh sửa câu hỏi</h3><div style="margin-top: 20px;"><label style="font-weight: 700; font-size: 12px;">Nội dung câu hỏi</label><textarea id="editNoiDung" class="input-q" rows="4" style="margin-top: 5px;"></textarea></div><div class="form-grid"><div><label style="font-size:11px; font-weight:700;">Đáp án A</label><input type="text" id="editA" class="input-q" oninput="applyEditColors()"></div><div><label style="font-size:11px; font-weight:700;">Đáp án B</label><input type="text" id="editB" class="input-q" oninput="applyEditColors()"></div><div><label style="font-size:11px; font-weight:700;">Đáp án C</label><input type="text" id="editC" class="input-q" oninput="applyEditColors()"></div><div><label style="font-size:11px; font-weight:700;">Đáp án D</label><input type="text" id="editD" class="input-q" oninput="applyEditColors()"></div></div><div style="margin-top: 15px; width: 200px;"><label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 5px;">Đáp án đúng</label><select id="editDapAnDung" class="input-q" onchange="applyEditColors()"><option value="A">Câu A</option><option value="B">Câu B</option><option value="C">Câu C</option><option value="D">Câu D</option></select></div><div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;"><button class="btn-blue" style="background:#e2e8f0; color:black;" onclick="closePop()">Huỷ</button><button class="btn-blue" onclick="closePop()">Lưu</button><button class="btn-blue" style="background:#ef4444;">Xoá khỏi đề</button></div></div></div>
-
-</main>
+    </main>
 
 <script>
 window.onload = function() {
@@ -167,14 +163,12 @@ window.onload = function() {
     const idDe = urlParams.get('id_de');
 
     if (idDe) {
-        // CHỖ NÀY CẦN SỬA: Sử dụng biến dữ liệu Django để nạp thông tin thật từ database
+        // Sử dụng biến dữ liệu Django để nạp thông tin thật từ database
         const ten = "{{ de_thi.tenDeThi|default:''|escapejs }}";
-        const mon = "{{ de_thi.maMonHoc.tenMonHoc|default:''|escapejs }}";
-        const tg = "{{ de_thi.thoiGian|default:'0'|escapejs }}";
+        const mon = "{{ de_thi.lopHoc.monHoc.tenMonHoc|default:''|escapejs }}";
+        const tg = "{{ de_thi.thoiGianLamBai|default:'0'|escapejs }}";
         const sc = "{{ ds_cau_hoi|length|default:'0' }}";
-
-        // CHỈNH SỬA TẠI ĐÂY: Lấy giá trị thực của cột soLanLam từ database
-        const sl = "{{ de_thi.soLanLam|default:'1' }}";
+        const sl = "{{ de_thi.soLanLamToiDa|default:'1' }}";
 
         if (ten !== "") {
             // Hiển thị khung xem chi tiết đề thi, ẩn danh sách
@@ -188,8 +182,6 @@ window.onload = function() {
             document.getElementById('prevTime').innerText = tg;
             document.getElementById('prevCount').innerText = sc + " câu";
             document.getElementById('prevMonHoc').innerText = mon;
-
-            // CẬP NHẬT TẠI ĐÂY: Hiển thị đúng số lần làm bài từ database (ví dụ: 99)
             document.getElementById('prevSoLan').innerText = sl;
         }
     }

@@ -37,6 +37,7 @@
         .exam-item { background: white; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border: 1px solid #edf2f7; }
         .btn-base { padding: 10px 25px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; color: white !important; }
         .btn-student { background-color: var(--blue); }
+        .exam-list-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: #1b2559; }
     </style>
 </head>
 <body>
@@ -45,7 +46,7 @@
 
     <a href="{% url 'quiz:trang_chu' %}" class="nav-link active">Trang chủ</a>
 
-    {% if user.vaiTro == 'Giáo viên' %}
+    {% if user.is_teacher %}
         <a href="{% url 'quiz:quan_ly_de_thi' %}" class="nav-link">Quản lý đề thi</a>
         <a href="{% url 'quiz:ds_bai_thi_da_tao' %}" class="nav-link">Quản lý kết quả</a>
         <a href="{% url 'quiz:ngan_hang_cau_hoi' %}" class="nav-link">Ngân hàng câu hỏi</a>
@@ -61,15 +62,15 @@
             <h1 style="font-size: 24px; margin: 0;">Trang chủ!</h1>
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="text-align: right;">
-                    <div style="font-weight: 700;">{{ user.hoTen }}</div>
-                    <small style="color: #718096;">{{ user.vaiTro }}</small>
+                    <div style="font-weight: 700;">{{ user.ho_ten }}</div>
+                    <small style="color: #718096;">{% if user.is_teacher %}Người dạy{% else %}Người học{% endif %}</small>
                 </div>
-                <div class="avatar">{{ user.hoTen|first|upper }}</div>
+                <div class="avatar">{{ user.ho_ten|default:"U"|first|upper }}</div>
             </div>
         </div>
 
         <div class="stats-grid">
-            {% if user.vaiTro == 'Giáo viên' %}
+            {% if user.is_teacher %}
                 <div class="card" style="background: #fef3c7;"> <div class="title">TỔNG ĐỀ THI</div> <div class="value">{{ tong_de_thi }}</div> </div>
                 <div class="card" style="background: #e0f2fe;"> <div class="title">ĐỀ ĐANG MỞ</div> <div class="value">{{ de_dang_mo }}</div> </div>
                 <div class="card" style="background: #dcfce7;"> <div class="title">TỔNG SINH VIÊN</div> <div class="value">{{ tong_sinh_vien }}</div> </div>
@@ -82,20 +83,34 @@
             {% endif %}
         </div>
 
-        {% if user.vaiTro == 'Giáo viên' %}
-
+        {% if user.is_teacher %}
+            <div class="welcome-box">
+                <h2 style="color: var(--blue); margin-top: 0;">Chào mừng trở lại!</h2>
+                <p style="color: #718096; margin-bottom: 25px;">Hãy bắt đầu quản lý các bài thi và ngân hàng câu hỏi của bạn.</p>
+                <a href="{% url 'quiz:quan_ly_de_thi' %}" class="btn-base btn-student">Đi đến Quản lý đề thi</a>
+            </div>
         {% else %}
-            <div class="exam-list-title">Danh sách bài thi đang diễn ra</div>
+            <div class="exam-list-title">Danh sách bài thi mới nhất</div>
             {% for de in ds_de_thi %}
             <div class="exam-item">
                 <div>
                     <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px;">{{ de.tenDeThi }}</div>
-                    <div style="font-size: 13px; color: #718096;">Thời gian: {{ de.thoiGian }} phút | Trạng thái: {{ de.trangThai }}</div>
+                    <div style="font-size: 13px; color: #718096;">
+                        Thời gian: {{ de.thoiGianLamBai }} phút |
+                        Trạng thái:
+                        {% if de.trangThai == 'DANG_THI' %}
+                            <span style="color: #10b981; font-weight: 600;">Đang mở</span>
+                        {% elif de.trangThai == 'DA_CONG_BO' %}
+                            <span style="color: #eab308; font-weight: 600;">Sắp mở</span>
+                        {% else %}
+                            <span style="color: #ef4444; font-weight: 600;">Đã đóng</span>
+                        {% endif %}
+                    </div>
                 </div>
-                <a href="{% url 'quiz:xac_nhan_thi' de.maDeThi %}" class="btn-base btn-student">Vào thi</a>
+                <a href="{% url 'quiz:xac_nhan_thi' de.id %}" class="btn-base btn-student">Vào thi</a>
             </div>
             {% empty %}
-                <p style="text-align: center; color: #a0aec0; padding: 20px;">Hiện tại không có đề thi nào.</p>
+                <p style="text-align: center; color: #a0aec0; padding: 20px; background: white; border-radius: 12px; border: 1px dashed #cbd5e1;">Hiện tại bạn chưa có đề thi nào.</p>
             {% endfor %}
         {% endif %}
     </main>

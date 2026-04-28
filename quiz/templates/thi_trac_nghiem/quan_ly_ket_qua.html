@@ -26,9 +26,11 @@
 <nav class="sidebar">
     <div class="logo">Q - TEST</div>
     <a href="{% url 'quiz:trang_chu' %}" class="nav-link">Trang chủ</a>
-        <a href="/quiz/quan-ly-de-thi/" class="nav-link">Quản lý đề thi</a>
-        <a href="{% url 'quiz:ngan_hang_cau_hoi' %}" class="nav-link active">Quản lý kết quả thi</a>
-        <a href="/quiz/quan-ly-ket-qua/" class="nav-link">Ngân hàng câu hỏi</a>
+    <a href="{% url 'quiz:quan_ly_de_thi' %}" class="nav-link">Quản lý đề thi</a>
+
+    <a href="{% url 'quiz:ds_bai_thi_da_tao' %}" class="nav-link active">Quản lý kết quả thi</a>
+    <a href="{% url 'quiz:ngan_hang_cau_hoi' %}" class="nav-link">Ngân hàng câu hỏi</a>
+
     <a href="{% url 'quiz:logout' %}" class="nav-link" style="margin-top: auto;">Đăng xuất</a>
 </nav>
 
@@ -54,11 +56,16 @@
                         {% for kq in ds_ket_qua %}
                         <tr>
                             <td>{{ forloop.counter }}</td>
-                            <td>{{ kq.maNguoiHoc.hoTen }}</td>
+
+                            <td>{{ kq.sinhVien.ho_ten }}</td>
+
                             <td style="font-weight: bold; color: var(--blue);">{{ kq.diemSo }}</td>
                             <td>{{ kq.thoiGianNopBai|date:"H:i d/m/Y" }}</td>
-                            <td><a href="{% url 'quiz:chi_tiet_bai_lam' kq.maKetQua %}" style="color:var(--blue); text-decoration:none; font-weight:600;">Xem bài làm</a></td>
+
+                            <td><a href="{% url 'quiz:chi_tiet_bai_lam' kq.id %}" style="color:var(--blue); text-decoration:none; font-weight:600;">Xem bài làm</a></td>
                         </tr>
+                        {% empty %}
+                        <tr><td colspan="5" style="text-align:center; padding:20px;">Chưa có sinh viên nào nộp bài.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -80,7 +87,14 @@
                             backgroundColor: '#1e5bb8'
                         }]
                     },
-                    options: { scales: { y: { beginAtZero: true } } }
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 } // Đảm bảo trục Y hiển thị số nguyên (không có 0.5 người)
+                            }
+                        }
+                    }
                 });
             </script>
         {% endif %}

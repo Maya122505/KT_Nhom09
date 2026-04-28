@@ -103,10 +103,10 @@
         </a>
         <div style="display: flex; align-items: center; gap: 12px;">
             <div style="text-align: right;">
-                <div style="font-weight: 800; color: rgba(0,0,0,0.85);">{{ user.hoTen }}</div>
-                <small style="color: var(--muted); font-weight: 600;">Học sinh</small>
+                <div style="font-weight: 800; color: rgba(0,0,0,0.85);">{{ user.ho_ten }}</div>
+                <small style="color: var(--muted); font-weight: 600;">Người học</small>
             </div>
-            <div class="avatar">{{ user.hoTen|first|upper }}</div>
+            <div class="avatar">{{ user.ho_ten|first|upper }}</div>
         </div>
     </div>
 
@@ -125,7 +125,7 @@
                             <path d="M12 7v6l4 2"></path>
                         </svg>
                     </span>
-                    <span>{{ de.thoiGian }} phút</span>
+                    <span>{{ de.thoiGianLamBai }} phút</span>
                 </div>
                 <div class="meta-row">
                     <span class="icon" aria-hidden="true">
@@ -134,7 +134,7 @@
                             <path d="M12 17h.01"></path>
                         </svg>
                     </span>
-                    <span>{{ de.soCauHoi }} câu</span>
+                    <span>{{ de.danhSachCauHoi.count }} câu</span>
                 </div>
                 <div class="meta-row">
                     <span class="icon" aria-hidden="true">
@@ -143,16 +143,16 @@
                             <path d="M21 3v6h-6"></path>
                         </svg>
                     </span>
-                    <span>{{ de.soLuotConLai }}/{{ de.soLuotThi }} lượt</span>
+                    <span>{{ de.so_luot_con_lai }}/{{ de.soLanLamToiDa }} lượt</span>
                 </div>
             </div>
 
             <div class="status">
-                {% if de.trangThai == 'Mở' %}Đang mở{% else %}Đã đóng{% endif %}
+                {% if de.trangThai == 'DANG_THI' %}Đang mở{% else %}Đã đóng{% endif %}
             </div>
 
-            {% if de.trangThai == 'Mở' and de.soLuotConLai > 0 %}
-                <a class="btn" href="{% url 'quiz:xac_nhan_thi' de.maDeThi %}">Bắt đầu làm bài</a>
+            {% if de.trangThai == 'DANG_THI' and de.so_luot_con_lai > 0 %}
+                <a class="btn" href="{% url 'quiz:xac_nhan_thi' de.id %}">Bắt đầu làm bài</a>
             {% else %}
                 <div class="btn disabled">Không khả dụng</div>
             {% endif %}

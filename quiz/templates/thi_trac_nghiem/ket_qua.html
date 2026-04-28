@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #1e5bb8; /* Đổi sang màu xanh thương hiệu Q-TEST của Uyên */
+            --primary: #1e5bb8;
             --bg: #f4f7fe;
             --success: #10b981;
             --text-dark: #1b2559;
@@ -119,8 +119,9 @@
     <div class="icon-check">✓</div>
     <h1>Nộp bài thành công!</h1>
     <p style="color: var(--text-light); margin-bottom: 0;">Chúc mừng học viên:</p>
+
     <p style="font-weight: 700; font-size: 18px; margin-top: 5px; color: var(--text-dark);">
-        {{ ket_qua.maNguoiHoc.hoTen }}
+        {{ ket_qua.sinhVien.ho_ten }}
     </p>
 
     <div class="score-container">
@@ -131,7 +132,7 @@
     </div>
 
     <div class="details">
-        📍 <b>Đề thi:</b> {{ ket_qua.maDeThi.tenDeThi }} <br>
+        📍 <b>Đề thi:</b> {{ ket_qua.deThi.tenDeThi }} <br>
         📅 <b>Ngày nộp:</b> {{ ket_qua.thoiGianNopBai|date:"d/m/Y" }} <br>
         ⏰ <b>Giờ nộp:</b> {{ ket_qua.thoiGianNopBai|date:"H:i:s" }}
     </div>

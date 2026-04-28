@@ -445,10 +445,10 @@
                                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                             </svg>
                         </button>
-                        <div class="avatar" aria-hidden="true">{{ ket_qua.maNguoiHoc.hoTen|default:"T"|first|upper }}</div>
+                        <div class="avatar" aria-hidden="true">{{ ket_qua.sinhVien.ho_ten|default:"H"|first|upper }}</div>
                         <div class="user-box">
-                            <div class="user-name">{{ ket_qua.maNguoiHoc.hoTen|default:"Học sinh" }}</div>
-                            <div class="user-role">{{ ket_qua.maNguoiHoc.vaiTro|default:"Học sinh" }}</div>
+                            <div class="user-name">{{ ket_qua.sinhVien.ho_ten|default:"Người học" }}</div>
+                            <div class="user-role">Người học</div>
                         </div>
                     </div>
                 </header>
@@ -456,20 +456,20 @@
                 <main class="main-panel">
                     <h1 class="exam-title">{{ de_thi.tenDeThi }}</h1>
 
-                    <form id="quizForm" method="POST" action="{% url 'quiz:nop_bai' ket_qua.maKetQua %}">
+                    <form id="quizForm" method="POST" action="{% url 'quiz:nop_bai' ket_qua.id %}">
                         {% csrf_token %}
 
                         {% for item in danh_sach_cau_hoi %}
                         <section class="question-block" id="q_{{ forloop.counter }}">
                             <div class="q-label">Câu hỏi {{ forloop.counter }}</div>
-                            <p class="q-text">{{ item.maCauHoi.noiDungCauHoi|default:item.maCauHoi }}</p>
+                            <p class="q-text">{{ item.noiDungCauHoi }}</p>
 
                             <div class="options">
-                                {% for lc in item.maCauHoi.luachon_set.all %}
+                                {% for lc in item.cac_lua_chon.all %}
                                 <label class="option-line">
                                     <input type="radio"
-                                           name="cauhoi_{{ item.maCauHoi.maCauHoi }}"
-                                           value="{{ lc.maLuaChon }}"
+                                           name="cauhoi_{{ item.id }}"
+                                           value="{{ lc.id }}"
                                            onchange="markDone({{ forloop.parentloop.counter }})">
                                     <span class="opt-letter">
                                         {% if forloop.counter == 1 %}A.{% elif forloop.counter == 2 %}B.{% elif forloop.counter == 3 %}C.{% elif forloop.counter == 4 %}D.{% elif forloop.counter == 5 %}E.{% elif forloop.counter == 6 %}F.{% elif forloop.counter == 7 %}G.{% elif forloop.counter == 8 %}H.{% elif forloop.counter == 9 %}I.{% elif forloop.counter == 10 %}J.{% else %}{{ forloop.counter }}.{% endif %}
@@ -567,7 +567,8 @@
             }
         }
 
-        let seconds = {{ de_thi.thoiGian }} * 60;
+        // CẬP NHẬT: de_thi.thoiGianLamBai
+        let seconds = {{ de_thi.thoiGianLamBai }} * 60;
         const timerInterval = setInterval(() => {
             const h = Math.floor(seconds / 3600);
             const m = Math.floor((seconds % 3600) / 60);
@@ -614,7 +615,6 @@
 
         setActive(1);
 
-        // Allow closing the modal with Escape.
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeModal();
         });

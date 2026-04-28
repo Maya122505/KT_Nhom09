@@ -86,44 +86,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'q_test.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
 DATABASES = {
     'default': {
-        'ENGINE': 'mssql',
-        'NAME': 'Q_TEST',             # Tên Database của bạn
-        'HOST': 'localhost',          # Hoặc tên máy tính\tên instance (Ví dụ: 'localhost\\SQLEXPRESS')
-        'PORT': '',                   # Có thể để trống hoặc xóa luôn dòng này
-        'OPTIONS': {
-            'driver': 'ODBC Driver 17 for SQL Server', # Đảm bảo đúng phiên bản driver trên máy bạn
-            'extra_params': 'Trusted_Connection=yes;', # <--- ĐÂY LÀ DÒNG QUAN TRỌNG NHẤT
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
-# Render/Linux: default to SQLite to avoid requiring SQL Server/ODBC.
-# Local Windows dev: keep SQL Server, but allow overriding via env vars.
-if os.name == "nt":
-    DATABASES["default"]["NAME"] = os.getenv("MSSQL_NAME", DATABASES["default"].get("NAME", "Q_TEST"))
-    DATABASES["default"]["HOST"] = os.getenv("MSSQL_HOST", DATABASES["default"].get("HOST", "localhost"))
-    DATABASES["default"]["PORT"] = os.getenv("MSSQL_PORT", DATABASES["default"].get("PORT", ""))
-    DATABASES["default"].setdefault("OPTIONS", {})
-    DATABASES["default"]["OPTIONS"]["driver"] = os.getenv(
-        "MSSQL_DRIVER",
-        DATABASES["default"]["OPTIONS"].get("driver", "ODBC Driver 17 for SQL Server"),
-    )
-    DATABASES["default"]["OPTIONS"]["extra_params"] = os.getenv(
-        "MSSQL_EXTRA_PARAMS",
-        DATABASES["default"]["OPTIONS"].get("extra_params", "Trusted_Connection=yes;"),
-    )
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
 
 
 # Password validation
@@ -144,6 +112,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTH_USER_MODEL = 'quiz.NguoiDung'
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/

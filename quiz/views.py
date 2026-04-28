@@ -2,196 +2,44 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.http import HttpResponseForbidden
 from django.db import transaction
-from django.db.models import Avg, Max, Count
-from .models import NguoiDung, DeThi, KetQuaThi, DeThi_CauHoi, LuaChon, ChiTietBaiLam,Khoa
+from django.db.models import Avg, Count
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 
-# 1. TRANG CHỦ (DASHBOARD)
-def trang_chu(request):
-    ma_nd = request.session.get('maNguoiDung')
-    if not ma_nd:
-        return redirect('quiz:login')
-
-    try:
-        user = NguoiDung.objects.get(maNguoiDung=ma_nd)
-    except NguoiDung.DoesNotExist:
-        return redirect('quiz:login')
-
-    ds_de_thi = DeThi.objects.all()
-    context = {
-        'user': user,
-        'ds_de_thi': ds_de_thi,
-    }
-
-    if user.vaiTro == 'Giáo viên':
-        context['tong_de_thi'] = DeThi.objects.count()
-        context['de_dang_mo'] = DeThi.objects.filter(trangThai='Mở').count()
-        context['tong_sinh_vien'] = NguoiDung.objects.filter(vaiTro='Học sinh').count()
-        context['tong_luot_lam'] = KetQuaThi.objects.count()
-    else:
-        # SỬA TẠI ĐÂY: Lọc theo user để hết bị số ÂM
-        context['tong_bai_thi'] = DeThi.objects.count()
-        da_lam_count = KetQuaThi.objects.filter(maNguoiHoc=user).count()
-        context['da_lam'] = da_lam_count
-
-        # Tính điểm trung bình chuẩn của cá nhân
-        diem_avg = KetQuaThi.objects.filter(maNguoiHoc=user).aggregate(Avg('diemSo'))['diemSo__avg']
-        context['diem_tb'] = round(diem_avg, 1) if diem_avg else 0
-
-        # Con số này bây giờ sẽ luôn dương và chuẩn
-        context['chua_lam'] = max(0, context['tong_bai_thi'] - da_lam_count)
-
-    return render(request, 'thi_trac_nghiem/trang_chu.html', context)
+from .models import NguoiDung, DeThi, KetQuaThi, LuaChon, ChiTietBaiLam, Khoa, MonHoc, LopHoc, NganHangCauHoi, CauHoi
 
 
-# 2. XÁC NHẬN TRƯỚC KHI THI
-def xac_nhan_thi(request, ma_de_thi):
-    # 1. Kiểm tra đăng nhập
-    ma_nd = request.session.get('maNguoiDung')
-    if not ma_nd:
-        return redirect('quiz:login')
-
-    # 2. Lấy người dùng
-    nguoi_dung = get_object_or_404(NguoiDung, maNguoiDung=ma_nd)
-
-    # 3. Lấy đề thi
-    de_thi = get_object_or_404(DeThi, pk=ma_de_thi)
-
-    # 4. Đếm số câu hỏi
-    so_cau = DeThi_CauHoi.objects.filter(maDeThi=de_thi).count()
-
-    # 5. Đếm số lần đã làm
-    da_lam = KetQuaThi.objects.filter(
-        maNguoiHoc=nguoi_dung,
-        maDeThi=de_thi
-    ).count()
-
-    # 6. Tính số lần còn lại (KHÔNG BAO GIỜ ÂM)
-    so_lan_con_lai = max(0, de_thi.soLanLam - da_lam)
-
-    # 7. Trả dữ liệu về giao diện
-    context = {
-        'user': nguoi_dung,
-        'de_thi': de_thi,
-        'so_cau': so_cau,
-        'so_lan_con_lai': so_lan_con_lai,
-    }
-
-    return render(request, 'thi_trac_nghiem/xac_nhan_thi.html', context)
-# 3. BẮT ĐẦU THI
-def bat_dau_thi(request, ma_de_thi):
-    ma_nd = request.session.get('maNguoiDung')
-    if not ma_nd: return redirect('quiz:login')
-
-    nguoi_dung = get_object_or_404(NguoiDung, maNguoiDung=ma_nd)
-    de_thi = get_object_or_404(DeThi, pk=ma_de_thi)
-
-    so_lan_da_lam = KetQuaThi.objects.filter(maNguoiHoc=nguoi_dung, maDeThi=de_thi).count()
-    if so_lan_da_lam >= de_thi.soLanLam:
-        return HttpResponseForbidden("Bạn đã hết lượt làm bài.")
-
-    max_id = KetQuaThi.objects.aggregate(Max('maKetQua'))['maKetQua__max']
-    next_id = (max_id + 1) if max_id is not None else 1
-
-    ket_qua = KetQuaThi.objects.create(
-        maKetQua=next_id,
-        maNguoiHoc=nguoi_dung,
-        maDeThi=de_thi,
-        diemSo=0.0,
-        thoiGianBatDau=timezone.now(),
-        soLanLam=so_lan_da_lam + 1
-    )
-    return redirect('quiz:hien_thi_de_thi', ma_ket_qua=ket_qua.maKetQua)
-
-
-# 4. GIAO DIỆN LÀM BÀI
-def hien_thi_de_thi(request, ma_ket_qua):
-    ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua)
-    de_thi = ket_qua.maDeThi
-    # Phải có select_related('maCauHoi') thì mới lấy được nội dung câu hỏi
-    danh_sach_cau_hoi = DeThi_CauHoi.objects.filter(maDeThi=de_thi).select_related('maCauHoi')
-
-    return render(request, 'thi_trac_nghiem/lam_bai.html', {
-        'ket_qua': ket_qua,
-        'de_thi': de_thi,
-        'danh_sach_cau_hoi': danh_sach_cau_hoi,  # Tên biến này phải khớp với HTML
-    })
-
-
-# 5. NỘP BÀI
-def nop_bai(request, ma_ket_qua):
-    if request.method != 'POST': return redirect('quiz:trang_chu')
-
-    ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua)
-    de_thi = ket_qua.maDeThi
-    tong_so_cau = DeThi_CauHoi.objects.filter(maDeThi=de_thi).count()
-    diem_moi_cau = 10.0 / tong_so_cau if tong_so_cau > 0 else 0
-    so_cau_dung = 0
-
-    with transaction.atomic():
-        max_ct = ChiTietBaiLam.objects.aggregate(Max('maChiTiet'))['maChiTiet__max']
-        current_id = (max_ct + 1) if max_ct is not None else 1
-
-        for key, value in request.POST.items():
-            if key.startswith('cauhoi_'):
-                cau_hoi_id = int(key.split('_')[1])
-                lua_chon_id = int(value)
-                lua_chon = get_object_or_404(LuaChon, pk=lua_chon_id)
-
-                ChiTietBaiLam.objects.create(
-                    maChiTiet=current_id,
-                    maKetQua=ket_qua,
-                    maCauHoi_id=cau_hoi_id,
-                    maLuaChonDaChon=lua_chon
-                )
-                current_id += 1
-                if lua_chon.dapAnDung: so_cau_dung += 1
-
-        ket_qua.diemSo = round(so_cau_dung * diem_moi_cau, 2)
-        ket_qua.thoiGianNopBai = timezone.now()
-        ket_qua.save()
-
-    return render(request, 'thi_trac_nghiem/ket_qua.html', {'ket_qua': ket_qua})
-
-
-# 6. TRA CỨU & XEM LẠI
-def tra_cuu_ket_qua(request):
-    ma_nd = request.session.get('maNguoiDung')
-    if not ma_nd: return redirect('quiz:login')
-
-    user = get_object_or_404(NguoiDung, maNguoiDung=ma_nd)
-    ds_ket_qua = KetQuaThi.objects.filter(maNguoiHoc=user).order_by('-thoiGianNopBai')
-    return render(request, 'thi_trac_nghiem/tra_cuu_ket_qua.html', {'user': user, 'ds_ket_qua': ds_ket_qua})
-
-
-def xem_lai_bai_lam(request, ma_ket_qua):
-    ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua)
-    # Đã bỏ _id để hết lỗi FieldError
-    chi_tiet = ChiTietBaiLam.objects.filter(maKetQua=ket_qua).select_related('maCauHoi', 'maLuaChonDaChon')
-    return render(request, 'thi_trac_nghiem/xem_lai_bai.html', {'ket_qua': ket_qua, 'chi_tiet': chi_tiet})
-
-
-# 7. AUTHENTICATION
+# ==========================================
+# 1. AUTHENTICATION (Chuẩn Django)
+# ==========================================
 def user_login(request):
     if request.method == 'POST':
         email_input = request.POST.get('email')
         matkhau_input = request.POST.get('password')
-        try:
-            user = NguoiDung.objects.get(email=email_input, matKhau=matkhau_input)
-            request.session['maNguoiDung'] = user.maNguoiDung
+
+        # Xác thực tài khoản
+        user = authenticate(request, email=email_input, password=matkhau_input)
+
+        if user is not None:
+
+            # Nếu là Sinh viên / Giảng viên -> Cho phép vào Web
+            login(request, user)
             return redirect('quiz:trang_chu')
-        except NguoiDung.DoesNotExist:
-            return render(request, 'thi_trac_nghiem/login.html', {'error': 'Sai tài khoản!'})
+        else:
+            return render(request, 'thi_trac_nghiem/login.html', {'error': 'Sai email hoặc mật khẩu!'})
+
     return render(request, 'thi_trac_nghiem/login.html')
 
 
 def user_logout(request):
-    request.session.flush()
+    logout(request)
     return redirect('quiz:login')
 
 
 def user_register(request):
     if request.method == 'POST':
-        ho_ten = (request.POST.get('hoTen') or '').strip()
+        ho_ten = (request.POST.get('ho_ten') or '').strip()
         email = (request.POST.get('email') or '').strip().lower()
         mat_khau = request.POST.get('password') or ''
         nhap_lai = request.POST.get('password2') or ''
@@ -206,317 +54,277 @@ def user_register(request):
         if NguoiDung.objects.filter(email=email).exists():
             return render(request, 'thi_trac_nghiem/dang_ky.html', {'error': 'Email đã tồn tại.'})
 
-        vai_tro = 'Giáo viên' if role_choice == 'day' else 'Học sinh'
+        is_teacher = True if role_choice == 'day' else False
+        is_student = True if role_choice == 'hoc' else False
 
         try:
-            # NOTE: DB tables are `managed=False`, but writing rows is still allowed if DB is configured.
-            user = NguoiDung.objects.create(hoTen=ho_ten, email=email, matKhau=mat_khau, vaiTro=vai_tro)
+            # Dùng create_user để mật khẩu được mã hóa an toàn
+            user = NguoiDung.objects.create_user(
+                username=email, email=email, password=mat_khau,
+                ho_ten=ho_ten, is_teacher=is_teacher, is_student=is_student
+            )
+            login(request, user)
+            return redirect('quiz:trang_chu')
         except Exception as e:
-            # Some DB schemas don't auto-generate PKs for this table; fall back to manual increment.
-            try:
-                max_id = NguoiDung.objects.aggregate(Max('maNguoiDung'))['maNguoiDung__max']
-                next_id = (max_id + 1) if max_id is not None else 1
-                user = NguoiDung.objects.create(
-                    maNguoiDung=next_id,
-                    hoTen=ho_ten,
-                    email=email,
-                    matKhau=mat_khau,
-                    vaiTro=vai_tro,
-                )
-            except Exception as e2:
-                # Surface the real error to help you fix DB schema/config quickly.
-                return render(
-                    request,
-                    'thi_trac_nghiem/dang_ky.html',
-                    {'error': f'Không thể tạo tài khoản. Lỗi: {e2}'},
-                )
-
-        request.session['maNguoiDung'] = user.maNguoiDung
-        return redirect('quiz:trang_chu')
+            return render(request, 'thi_trac_nghiem/dang_ky.html', {'error': f'Lỗi hệ thống: {e}'})
 
     return render(request, 'thi_trac_nghiem/dang_ky.html')
 
 
 def recover_password(request):
-    # UI-only flow: accept email and show a generic success message (no email integration here).
-    if request.method == 'POST':
-        email = (request.POST.get('email') or '').strip().lower()
-        if not email:
-            return render(request, 'thi_trac_nghiem/khoi_phuc_mat_khau.html', {'error': 'Vui lòng nhập email.'})
-
-        return render(
-            request,
-            'thi_trac_nghiem/khoi_phuc_mat_khau.html',
-            {'success': 'Nếu email tồn tại, mã xác nhận đã được gửi.'},
-        )
-
     return render(request, 'thi_trac_nghiem/khoi_phuc_mat_khau.html')
 
 
-def quan_ly_de_thi(request):
-    # 1. Lấy tham số id_de từ URL (ví dụ: ?id_de=2)
-    id_de = request.GET.get('id_de')
+# ==========================================
+# 2. TRANG CHỦ
+# ==========================================
+@login_required(login_url='quiz:login')
+def trang_chu(request):
+    user = request.user
+    context = {'user': user}
 
-    context = {
-        'ds_de_thi': DeThi.objects.all(),
-        'ds_mon': MonHoc.objects.all(),
-        'ds_khoa': Khoa.objects.all(),
-        'ds_ngan_hang': NganHangCauHoi.objects.all(),
-    }
+    if user.is_teacher:
+        context['tong_de_thi'] = DeThi.objects.filter(nguoiTao=user).count()
+        context['de_dang_mo'] = DeThi.objects.filter(nguoiTao=user, trangThai='DANG_THI').count()
+        context['tong_sinh_vien'] = NguoiDung.objects.filter(is_student=True).count()
+        context['tong_luot_lam'] = KetQuaThi.objects.filter(deThi__nguoiTao=user).count()
+    else:
+        # Tìm các đề thi thuộc các lớp sinh viên đang học
+        cac_de_thi = DeThi.objects.filter(lopHoc__danhSachSinhVien=user)
+        context['tong_bai_thi'] = cac_de_thi.count()
 
-    # 2. Nếu có id_de, bốc đúng 5 câu hỏi từ SQL ra
-    if id_de:
-        de_thi = get_object_or_404(DeThi, pk=id_de)
-        # Lấy danh sách câu hỏi thông qua bảng trung gian
-        ds_cau_hoi = de_thi.objects.filter(maDeThi=de_thi)
+        da_lam_count = KetQuaThi.objects.filter(sinhVien=user).values('deThi').distinct().count()
+        context['da_lam'] = da_lam_count
 
-        # Nạp dữ liệu vào context để HTML hiển thị
-        context['de_thi'] = de_thi
-        context['ds_cau_hoi'] = ds_cau_hoi
+        diem_avg = KetQuaThi.objects.filter(sinhVien=user).aggregate(Avg('diemSo'))['diemSo__avg']
+        context['diem_tb'] = round(diem_avg, 1) if diem_avg else 0
+        context['chua_lam'] = max(0, context['tong_bai_thi'] - da_lam_count)
 
-    return render(request, 'quan_ly_de_thi.html', context)
-def danh_sach_de_thi(request):
-    ma_nd = request.session.get('maNguoiDung')
-    if not ma_nd: return redirect('quiz:login')
+        context['ds_de_thi'] = cac_de_thi[:5]  # Hiển thị 5 đề mới nhất
 
-    user = get_object_or_404(NguoiDung, maNguoiDung=ma_nd)
-    # Lấy tất cả đề để UI có thể hiện cả nút "Không khả dụng" cho đề đã đóng.
-    ds_de_thi = DeThi.objects.all()
-
-    return render(request, 'thi_trac_nghiem/thuc_hien_de_thi.html', {
-        'user': user,
-        'ds_de_thi': ds_de_thi
-    })
+    return render(request, 'thi_trac_nghiem/trang_chu.html', context)
 
 
+# ==========================================
+# 3. LUỒNG THI TRẮC NGHIỆM (SINH VIÊN)
+# ==========================================
+@login_required(login_url='quiz:login')
 def thuc_hien_de_thi(request):
-    ma_nd = request.session.get('maNguoiDung')
-    if not ma_nd:
-        return redirect('quiz:login')
-
-    user = get_object_or_404(NguoiDung, maNguoiDung=ma_nd)
-
-    # Danh sách đề thi từ DB. Template có thể tự quyết hiển thị "Bắt đầu làm bài" / "Không khả dụng"
-    # dựa theo trường `trangThai`.
-    ds_de_thi = DeThi.objects.all()
-
-    # Template đang dùng các field "soCauHoi" và "soLuotThi" như trong bản thiết kế.
-    # Model hiện tại dùng `soLanLam` và số câu nằm ở bảng trung gian DeThi_CauHoi.
-    q_counts = dict(
-        DeThi_CauHoi.objects.values("maDeThi").annotate(c=Count("maCauHoi")).values_list("maDeThi", "c")
-    )
-    attempt_counts = dict(
-        KetQuaThi.objects.filter(maNguoiHoc=user)
-        .values("maDeThi")
-        .annotate(c=Count("maKetQua"))
-        .values_list("maDeThi", "c")
-    )
+    user = request.user
+    # Lấy các đề thi thuộc lớp mà sinh viên tham gia
+    ds_de_thi = DeThi.objects.filter(lopHoc__danhSachSinhVien=user)
 
     for de in ds_de_thi:
-        de.soLuotThi = int(getattr(de, "soLanLam", 0) or 0)
-        de.soCauHoi = int(q_counts.get(de.maDeThi, 0) or 0)
+        # Lấy số lượt đã thi của user này
+        so_luot_da_thi = KetQuaThi.objects.filter(sinhVien=user, deThi=de).count()
+        de.so_luot_con_lai = max(0, de.soLanLamToiDa - so_luot_da_thi)
 
-        de.soLuotDaThi = int(attempt_counts.get(de.maDeThi, 0) or 0)
-        de.soLuotConLai = max(0, de.soLuotThi - de.soLuotDaThi)
-
-    return render(request, 'quiz/danh_sach_bai_thi.html', {
+    return render(request, 'thi_trac_nghiem/danh_sach_bai_thi.html', {
         'user': user,
         'ds_de_thi': ds_de_thi,
     })
+
+
+@login_required(login_url='quiz:login')
+def xac_nhan_thi(request, ma_de_thi):
+    de_thi = get_object_or_404(DeThi, pk=ma_de_thi)
+    da_lam = KetQuaThi.objects.filter(sinhVien=request.user, deThi=de_thi).count()
+    so_lan_con_lai = max(0, de_thi.soLanLamToiDa - da_lam)
+
+    context = {
+        'user': request.user,
+        'de_thi': de_thi,
+        'so_cau': de_thi.danhSachCauHoi.count(),
+        'so_lan_con_lai': so_lan_con_lai,
+    }
+    return render(request, 'thi_trac_nghiem/xac_nhan_thi.html', context)
+
+
+@login_required(login_url='quiz:login')
+def bat_dau_thi(request, ma_de_thi):
+    de_thi = get_object_or_404(DeThi, pk=ma_de_thi)
+    so_lan_da_lam = KetQuaThi.objects.filter(sinhVien=request.user, deThi=de_thi).count()
+
+    if so_lan_da_lam >= de_thi.soLanLamToiDa:
+        return HttpResponseForbidden("Bạn đã hết lượt làm bài.")
+
+    # Không cần tính ID thủ công, Django tự động làm
+    ket_qua = KetQuaThi.objects.create(
+        sinhVien=request.user,
+        deThi=de_thi,
+        diemSo=0.0,
+        thoiGianBatDau=timezone.now()
+    )
+    return redirect('quiz:hien_thi_de_thi', ma_ket_qua=ket_qua.id)
+
+
+@login_required(login_url='quiz:login')
+def hien_thi_de_thi(request, ma_ket_qua):
+    ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua)
+    de_thi = ket_qua.deThi
+
+    # Lấy danh sách câu hỏi qua trường ManyToMany (danhSachCauHoi)
+    danh_sach_cau_hoi = de_thi.danhSachCauHoi.all().prefetch_related('cac_lua_chon')
+
+    return render(request, 'thi_trac_nghiem/lam_bai.html', {
+        'ket_qua': ket_qua,
+        'de_thi': de_thi,
+        'danh_sach_cau_hoi': danh_sach_cau_hoi,
+    })
+
+
+@login_required(login_url='quiz:login')
+def nop_bai(request, ma_ket_qua):
+    if request.method != 'POST': return redirect('quiz:trang_chu')
+
+    ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua)
+    de_thi = ket_qua.deThi
+    tong_so_cau = de_thi.danhSachCauHoi.count()
+    diem_moi_cau = 10.0 / tong_so_cau if tong_so_cau > 0 else 0
+    so_cau_dung = 0
+
+    with transaction.atomic():
+        for key, value in request.POST.items():
+            if key.startswith('cauhoi_'):
+                cau_hoi_id = int(key.split('_')[1])
+                lua_chon_id = int(value)
+
+                cau_hoi = get_object_or_404(CauHoi, pk=cau_hoi_id)
+                lua_chon = get_object_or_404(LuaChon, pk=lua_chon_id)
+
+                ChiTietBaiLam.objects.create(
+                    ketQua=ket_qua,
+                    cauHoi=cau_hoi,
+                    luaChonDaChon=lua_chon
+                )
+                if lua_chon.dapAnDung:
+                    so_cau_dung += 1
+
+        ket_qua.diemSo = round(so_cau_dung * diem_moi_cau, 2)
+        ket_qua.thoiGianNopBai = timezone.now()
+        ket_qua.save()
+
+    return render(request, 'thi_trac_nghiem/ket_qua.html', {'ket_qua': ket_qua})
+
+
+@login_required(login_url='quiz:login')
+def tra_cuu_ket_qua(request):
+    ds_ket_qua = KetQuaThi.objects.filter(sinhVien=request.user).order_by('-thoiGianNopBai')
+    return render(request, 'thi_trac_nghiem/tra_cuu_ket_qua.html', {'user': request.user, 'ds_ket_qua': ds_ket_qua})
+
+
+@login_required(login_url='quiz:login')
+def xem_lai_bai_lam(request, ma_ket_qua):
+    ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua)
+    chi_tiet = ChiTietBaiLam.objects.filter(ketQua=ket_qua).select_related('cauHoi', 'luaChonDaChon')
+    return render(request, 'thi_trac_nghiem/xem_lai_bai.html', {'ket_qua': ket_qua, 'chi_tiet': chi_tiet})
+
+
+# ==========================================
+# 4. LUỒNG QUẢN LÝ (GIẢNG VIÊN)
+# ==========================================
+@login_required(login_url='quiz:login')
 def quan_ly_de_thi(request):
     id_de = request.GET.get('id_de')
-
-    # 1. Tạo context với các dữ liệu nền TRƯỚC
     context = {
-        'ds_de_thi': DeThi.objects.all(),
+        'ds_de_thi': DeThi.objects.filter(nguoiTao=request.user),
         'ds_mon': MonHoc.objects.all(),
-        'ds_khoa': Khoa.objects.all(),
-        'ds_ngan_hang': NganHangCauHoi.objects.all(),
-        'ds_cau_hoi': [],  # Mặc định để trống, sẽ nạp ở dưới nếu có id_de
-        'id_de': id_de,  # Gửi cái này sang để HTML nhận diện đề đang chọn
+        'ds_ngan_hang': NganHangCauHoi.objects.filter(nguoiQuanLy=request.user),
+        'ds_cau_hoi': [],
+        'id_de': id_de,
     }
 
     if id_de:
         try:
-            # 2. Tìm đúng cái đề thi (ID số 1 hoặc 2)
             de_thi = DeThi.objects.get(pk=id_de)
             context['de_thi'] = de_thi
-
-            # 3. LẤY CÂU HỎI VÀ LỰA CHỌN (Phải dùng prefetch_related để lấy câu A, B, C, D)
-            # Dùng select_related để lấy nội dung câu hỏi
-            # Dùng prefetch_related để lấy các đáp án từ bảng LuaChon
-            context['ds_cau_hoi'] = DeThi_CauHoi.objects.filter(maDeThi=de_thi) \
-                .select_related('maCauHoi') \
-                .prefetch_related('maCauHoi__luachon_set')
-
+            context['ds_cau_hoi'] = de_thi.danhSachCauHoi.all().prefetch_related('cac_lua_chon')
         except DeThi.DoesNotExist:
             pass
 
     return render(request, 'thi_trac_nghiem/quan_ly_de_thi.html', context)
-from django.contrib import messages
 
+
+@login_required(login_url='quiz:login')
 def xoa_de_thi(request, ma_de_thi):
-    # Tìm đề thi theo ID
     de_thi = get_object_or_404(DeThi, pk=ma_de_thi)
-
-    # Thực hiện xóa
     de_thi.delete()
-
-    # Hiển thị thông báo thành công
     messages.success(request, f"Đã xóa thành công đề thi: {de_thi.tenDeThi}")
-
-    # Quay lại trang quản lý
     return redirect('quiz:quan_ly_de_thi')
 
 
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import DeThi
+@login_required(login_url='quiz:login')
+def tao_de_thi_moi(request):
+    if request.method == "POST":
+        ten_de = request.POST.get('ten_de')
+        lop_id = request.POST.get('lop_id')  # Nên gắn vào lớp thay vì môn học
+        thoi_gian = request.POST.get('thoi_gian')
+        mat_khau = request.POST.get('mat_khau')
+        so_lan = request.POST.get('so_lan')
 
+        lop_hoc = get_object_or_404(LopHoc, pk=lop_id)
 
-# 1. Hàm Tạo & Sửa đề thi (Dùng chung 1 view cho gọn)
-def form_de_thi(request, ma_de_thi=None):
-    de_thi = None
-    if ma_de_thi:
-        de_thi = get_object_or_404(DeThi, pk=ma_de_thi)
-
-    if request.method == 'POST':
-        ten = request.POST.get('tenDeThi')
-        tg = request.POST.get('thoiGian')
-        trang_thai = request.POST.get('trangThai')
-
-        if de_thi:  # Nếu có ID thì là Sửa
-            de_thi.tenDeThi = ten
-            de_thi.thoiGian = tg
-            de_thi.trangThai = trang_thai
-            de_thi.save()
-        else:  # Không có ID thì là Tạo mới
-            DeThi.objects.create(tenDeThi=ten, thoiGian=tg, trangThai=trang_thai)
-
+        DeThi.objects.create(
+            tenDeThi=ten_de,
+            lopHoc=lop_hoc,
+            thoiGianBatDau=timezone.now(),
+            thoiGianKetThuc=timezone.now() + timezone.timedelta(days=7),
+            thoiGianLamBai=thoi_gian,
+            matKhauDeThi=mat_khau,
+            soLanLamToiDa=so_lan,
+            nguoiTao=request.user
+        )
         return redirect('quiz:quan_ly_de_thi')
-
-    return render(request, 'thi_trac_nghiem/form_de_thi.html', {'de_thi': de_thi})
-
-
-# 2. Hàm Xóa (Cập nhật lại cho chắc chắn)
-def xoa_de_thi(request, ma_de_thi):
-    de_thi = get_object_or_404(DeThi, pk=ma_de_thi)
-    de_thi.delete()
     return redirect('quiz:quan_ly_de_thi')
 
 
+@login_required(login_url='quiz:login')
 def ngan_hang_cau_hoi(request):
-    # Phải có dòng import này bên trong hoặc đầu file
-    from .models import NganHangCauHoi, MonHoc, Khoa
-
-    # 1. Định nghĩa các biến lấy từ URL (Phải có dòng này mới hết lỗi Unresolved reference)
     query = request.GET.get('q', '')
-    khoa_id = request.GET.get('khoa', '')
     mon_id = request.GET.get('mon', '')
 
-    # 2. Lấy dữ liệu ban đầu
-    ds_khoa = Khoa.objects.all()
     ds_mon = MonHoc.objects.all()
     ds_nh = NganHangCauHoi.objects.all()
 
-    # 3. Logic lọc (Sử dụng các biến đã định nghĩa ở trên)
     if query:
         ds_nh = ds_nh.filter(tenNganHang__icontains=query)
-
-    if khoa_id and khoa_id != "Tất cả":
-        # Sửa thành khoa_id để khớp với kiểu dữ liệu số từ SQL
-        ds_nh = ds_nh.filter(maMonHoc__maKhoa_id=khoa_id)
-        ds_mon = ds_mon.filter(maKhoa_id=khoa_id)
-
     if mon_id and mon_id != "Tất cả":
-        ds_nh = ds_nh.filter(maMonHoc_id=mon_id)
+        ds_nh = ds_nh.filter(monHoc_id=mon_id)
 
-    # 4. Gửi dữ liệu sang HTML
     return render(request, 'thi_trac_nghiem/ngan_hang_cau_hoi.html', {
         'ds_cau_hoi': ds_nh,
-        'ds_khoa': ds_khoa,
         'ds_mon': ds_mon,
-        'query': query,  # Phải gửi lại biến này để ô tìm kiếm không bị trống
-        'khoa_sel': khoa_id,
+        'query': query,
         'mon_sel': mon_id
     })
 
 
-from django.shortcuts import redirect
-from .models import NganHangCauHoi, MonHoc
-
+@login_required(login_url='quiz:login')
 def luu_ngan_hang_moi(request):
     if request.method == 'POST':
         ten_nh = request.POST.get('ten_nh')
         mon_id = request.POST.get('mon_id')
 
         if ten_nh and mon_id:
-            # Lấy đúng môn học từ SQL
-            mon_obj = MonHoc.objects.get(maMonHoc=mon_id)
-
-            # Tạo mới Ngân hàng câu hỏi vào SQL Server
+            mon_obj = get_object_or_404(MonHoc, pk=mon_id)
             NganHangCauHoi.objects.create(
                 tenNganHang=ten_nh,
-                maMonHoc=mon_obj
+                monHoc=mon_obj,
+                nguoiQuanLy=request.user
             )
-
-    # Lưu xong thì quay về trang danh sách
     return redirect('quiz:ngan_hang_cau_hoi')
-# Mở file views.py của Uyên ra và thêm hàm này vào:
-
-from django.shortcuts import render, redirect
-from .models import DeThi, MonHoc, NganHangCauHoi
-
-def tao_de_thi_moi(request):
-    if request.method == "POST":
-        # 1. Lấy dữ liệu từ các ô nhập liệu (dựa vào thuộc tính 'name')
-        ten_de = request.POST.get('ten_de')
-        ten_mon = request.POST.get('ten_mon')
-        thoi_gian = request.POST.get('thoi_gian')
-        so_cau = request.POST.get('so_cau')
-        mat_khau = request.POST.get('mat_khau')
-        so_lan = request.POST.get('so_lan')
-
-        # 2. Tìm môn học tương ứng trong SQL
-        mon_hoc_obj = MonHoc.objects.get(tenMonHoc=ten_mon)
-
-        # 3. Tạo đề thi mới và lưu vào SQL
-        moi_de = DeThi.objects.create(
-            tenDeThi=ten_de,
-            maMonHoc=mon_hoc_obj,
-            thoiGian=thoi_gian,
-            matKhau=mat_khau,
-            soLanLam=so_lan
-            # Trạng thái mặc định sẽ là 'Đang soạn thảo'
-        )
-
-        # 4. Sau khi lưu xong, quay lại trang danh sách
-        return redirect('quiz:quan_ly_de_thi')
 
 
-def xem_chi_tiet_de(request, ma_de_thi):
-    de_thi = get_object_or_404(DeThi, pk=ma_de_thi)
-    # Phải dùng DeThi_CauHoi (có gạch dưới) để lấy 5 câu hỏi
-    ds_cau_hoi = DeThi_CauHoi.objects.filter(maDeThi=de_thi).select_related('maCauHoi')
-
-    return render(request, 'quan_ly_de_thi.html', {
-        'de_thi': de_thi,
-        'ds_cau_hoi': ds_cau_hoi,
-        'view_mode': 'detail'  # Biến này để ép HTML hiện cái giao diện đẹp kia
-    })
-
-
-# ẢNH 1: Danh sách các bài thi đã tạo
+@login_required(login_url='quiz:login')
 def ds_bai_thi_da_tao(request):
-    # Lấy dữ liệu từ SQL
-    ds_bai_thi = DeThi.objects.all()
-    # TRỎ ĐÚNG VÀO THƯ MỤC TRONG ẢNH CỦA UYÊN
+    ds_bai_thi = DeThi.objects.filter(nguoiTao=request.user)
     return render(request, 'thi_trac_nghiem/ds_bai_thi.html', {'ds_bai_thi': ds_bai_thi})
 
 
-# ẢNH 2 & 3: Danh sách người thi & Phổ điểm
+@login_required(login_url='quiz:login')
 def xem_ket_qua_chi_tiet(request, ma_de_thi):
     de_thi = get_object_or_404(DeThi, pk=ma_de_thi)
-    ds_ket_qua = KetQuaThi.objects.filter(maDeThi=de_thi).select_related('maNguoiHoc')
+    ds_ket_qua = KetQuaThi.objects.filter(deThi=de_thi).select_related('sinhVien')
 
     pho_diem = [0] * 11
     for kq in ds_ket_qua:
@@ -529,19 +337,15 @@ def xem_ket_qua_chi_tiet(request, ma_de_thi):
         'pho_diem': pho_diem,
         'tab': request.GET.get('tab', 'list')
     }
-    # Đã đổi thành thi_trac_nghiem/ luôn nè
-    # Sửa lại cho khớp với cái tên file trong danh sách bên trái của Uyên
     return render(request, 'thi_trac_nghiem/quan_ly_ket_qua.html', context)
 
 
-# ẢNH 4: Chi tiết bài làm của từng cá nhân
+@login_required(login_url='quiz:login')
 def chi_tiet_bai_lam(request, ma_ket_qua):
     ket_qua = get_object_or_404(KetQuaThi, pk=ma_ket_qua)
-    chi_tiet = ChiTietBaiLam.objects.filter(maKetQua=ket_qua).select_related('maCauHoi', 'maLuaChonDaChon')
+    chi_tiet = ChiTietBaiLam.objects.filter(ketQua=ket_qua).select_related('cauHoi', 'luaChonDaChon')
 
-    context = {
+    return render(request, 'thi_trac_nghiem/chi_tiet_bai_lam.html', {
         'ket_qua': ket_qua,
         'chi_tiet': chi_tiet
-    }
-    # Đổi nốt cái này sang thi_trac_nghiem/ cho Uyên luôn
-    return render(request, 'thi_trac_nghiem/chi_tiet_bai_lam.html', context)
+    })

@@ -42,8 +42,8 @@
         <div class="logo">Q-TEST System</div>
         <a href="{% url 'quiz:trang_chu' %}" class="nav-link">Trang chủ</a>
         <a href="{% url 'quiz:quan_ly_de_thi' %}" class="nav-link active">Quản lý đề thi</a>
-        <a href="#" class="nav-link">Quản lý kết quả</a>
-        <a href="#" class="nav-link">Ngân hàng câu hỏi</a>
+        <a href="{% url 'quiz:ds_bai_thi_da_tao' %}" class="nav-link">Quản lý kết quả</a>
+        <a href="{% url 'quiz:ngan_hang_cau_hoi' %}" class="nav-link">Ngân hàng câu hỏi</a>
         <a href="{% url 'quiz:logout' %}" class="nav-link" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1);">Đăng xuất</a>
     </nav>
 
@@ -55,26 +55,26 @@
             </div>
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="text-align: right;">
-                    <div style="font-weight: 700;">{{ user.hoTen }}</div>
-                    <small style="color: #718096;">Giáo viên</small>
+                    <div style="font-weight: 700;">{{ user.ho_ten }}</div>
+                    <small style="color: #718096;">Người dạy</small>
                 </div>
-                <div class="avatar">{{ user.hoTen|first|upper }}</div>
+                <div class="avatar">{{ user.ho_ten|first|upper }}</div>
             </div>
         </div>
 
         <div class="content-body">
-            {% for item in danh_sach_cau_hoi %}
+            {% for item in ds_cau_hoi %}
             <div class="question-card">
                 <div class="q-title">
                     Câu {{ forloop.counter }}:
-                    <span style="color: var(--text);">{{ item.maCauHoi.noiDungCauHoi|default:item.maCauHoi }}</span>
+                    <span style="color: var(--text);">{{ item.noiDungCauHoi }}</span>
                 </div>
 
                 <div class="option-list">
-                    {% for lc in item.maCauHoi.luachon_set.all %}
-                    <div class="option-item {% if lc.isDung %}correct{% endif %}">
+                    {% for lc in item.cac_lua_chon.all %}
+                    <div class="option-item {% if lc.dapAnDung %}correct{% endif %}">
                         <b>{{ forloop.counter|stringformat:"c"|upper }}.</b> {{ lc.noiDungLuaChon }}
-                        {% if lc.isDung %} <span style="float: right;">✔ Đáp án đúng</span> {% endif %}
+                        {% if lc.dapAnDung %} <span style="float: right;">✔ Đáp án đúng</span> {% endif %}
                     </div>
                     {% endfor %}
                 </div>

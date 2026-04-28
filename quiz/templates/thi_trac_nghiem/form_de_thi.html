@@ -4,45 +4,61 @@
     <meta charset="UTF-8">
     <title>{% if de_thi %}Sửa đề thi{% else %}Tạo đề thi mới{% endif %}</title>
     <style>
-        body { font-family: sans-serif; background: #f4f7fe; display: flex; justify-content: center; padding-top: 50px; }
-        .form-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 350px; }
+        body { font-family: sans-serif; background: #f4f7fe; display: flex; justify-content: center; padding-top: 50px; padding-bottom: 50px; }
+        .form-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 400px; }
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        .btn-save { width: 100%; padding: 12px; background: #1e5bb8; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: #1b2559; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
+        .btn-save { width: 100%; padding: 12px; background: #1e5bb8; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; font-size: 15px; }
+        .btn-save:hover { background: #154c9e; }
     </style>
 </head>
 <body>
     <div class="form-card">
-        <h2>{% if de_thi %}Sửa đề thi{% else %}Tạo đề thi mới{% endif %}</h2>
-        <form method="POST">
+        <h2 style="color: #1b2559; text-align: center; margin-top: 0;">{% if de_thi %}Sửa đề thi{% else %}Tạo đề thi mới{% endif %}</h2>
+
+        <form method="POST" action="{% url 'quiz:tao_de_thi_moi' %}">
             {% csrf_token %}
+
             <div class="form-group">
                 <label>Tên đề thi</label>
-                <input type="text" name="tenDeThi" value="{{ de_thi.tenDeThi|default:'' }}" required>
+                <input type="text" name="ten_de" value="{{ de_thi.tenDeThi|default:'' }}" required placeholder="Ví dụ: Kiểm tra 15p">
             </div>
+
             <div class="form-group">
-                <label>Thời gian (phút)</label>
-                <input type="number" name="thoiGian" value="{{ de_thi.thoiGian|default:15 }}" required>
+                <label>ID Lớp học</label>
+                <input type="number" name="lop_id" value="{{ de_thi.lopHoc_id|default:'' }}" required placeholder="Ví dụ: Nhập ID lớp (1, 2...)">
             </div>
+
+            <div class="form-group">
+                <label>Thời gian làm bài (phút)</label>
+                <input type="number" name="thoi_gian" value="{{ de_thi.thoiGianLamBai|default:15 }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Số lần làm bài tối đa</label>
+                <input type="number" name="so_lan" value="{{ de_thi.soLanLamToiDa|default:1 }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Mật khẩu (Tùy chọn)</label>
+                <input type="text" name="mat_khau" value="{{ de_thi.matKhauDeThi|default:'' }}" placeholder="Bỏ trống nếu thi tự do">
+            </div>
+
             <div class="form-group">
                 <label>Trạng thái</label>
-<select name="trangThai">
-    {% if de_thi.trangThai == "Mở" %}
-        <option value="Mở" selected>Mở</option>
-        <option value="Đóng">Đóng</option>
-    {% elif de_thi.trangThai == "Đóng" %}
-        <option value="Mở">Mở</option>
-        <option value="Đóng" selected>Đóng</option>
-    {% else %}
-        <option value="Mở" selected>Mở</option>
-        <option value="Đóng">Đóng</option>
-    {% endif %}
-</select>
+                <select name="trang_thai">
+                    <option value="BAN_NHAP" {% if de_thi.trangThai == "BAN_NHAP" %}selected{% endif %}>Bản nháp</option>
+                    <option value="DA_CONG_BO" {% if de_thi.trangThai == "DA_CONG_BO" %}selected{% endif %}>Đã công bố (Sắp mở)</option>
+                    <option value="DANG_THI" {% if de_thi.trangThai == "DANG_THI" %}selected{% endif %}>Đang diễn ra</option>
+                    <option value="KET_THUC" {% if de_thi.trangThai == "KET_THUC" %}selected{% endif %}>Đã kết thúc</option>
+                    <option value="HUY" {% if de_thi.trangThai == "HUY" %}selected{% endif %}>Đã hủy</option>
+                </select>
             </div>
+
             <button type="submit" class="btn-save">LƯU THÔNG TIN</button>
             <br><br>
-            <a href="{% url 'quiz:quan_ly_de_thi' %}" style="text-decoration: none; color: #666; font-size: 13px; display: block; text-align: center;">Quay lại</a>
+            <a href="{% url 'quiz:quan_ly_de_thi' %}" style="text-decoration: none; color: #64748b; font-size: 14px; display: block; text-align: center; font-weight: 500;">← Quay lại</a>
         </form>
     </div>
 </body>

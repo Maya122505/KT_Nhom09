@@ -1,6 +1,6 @@
 <div class="container">
     <button onclick="history.back()">← Quay lại</button>
-    <h3>Chi tiết bài làm: {{ ket_qua.maNguoiHoc.hoTen }}</h3>
+    <h3>Chi tiết bài làm: {{ ket_qua.sinhVien.ho_ten }}</h3>
     <table class="table-box">
         <thead>
             <tr><th>STT</th><th>Câu hỏi</th><th>Đáp án đã chọn</th><th>Đáp án đúng</th><th>Kết quả</th></tr>
@@ -9,14 +9,33 @@
             {% for ct in chi_tiet %}
             <tr>
                 <td>{{ forloop.counter }}</td>
-                <td>{{ ct.maCauHoi.noiDungCauHoi }}</td>
-                <td>{{ ct.maLuaChonDaChon.noiDungLuaChon }}</td>
+                <td>{{ ct.cauHoi.noiDungCauHoi }}</td>
+
                 <td>
-                    {% for choice in ct.maCauHoi.luachon_set.all %}
+                    {% if ct.luaChonDaChon %}
+                        {{ ct.luaChonDaChon.noiDungLuaChon }}
+                    {% else %}
+                        <span style="color: gray; font-style: italic;">(Bỏ trống)</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% for choice in ct.cauHoi.cac_lua_chon.all %}
                         {% if choice.dapAnDung %}{{ choice.noiDungLuaChon }}{% endif %}
                     {% endfor %}
                 </td>
-                <td>{% if ct.maLuaChonDaChon.dapAnDung %}Đúng{% else %}Sai{% endif %}</td>
+
+                <td>
+                    {% if ct.luaChonDaChon and ct.luaChonDaChon.dapAnDung %}
+                        Đúng
+                    {% else %}
+                        Sai
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center;">Chưa có dữ liệu chi tiết bài làm.</td>
             </tr>
             {% endfor %}
         </tbody>
