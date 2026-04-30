@@ -1,276 +1,118 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tra cứu kết quả thi - Q-TEST</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --brand: #1565C0;
-            --bg: #EEF2F7;
-            --panel: #FFFFFF;
-            --border: #E5E7EB;
-            --muted: rgba(17, 24, 39, 0.60);
-            --text: #111827;
-        }
+{% extends 'base.html' %}
 
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            font-family: 'Roboto', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            display: flex;
-        }
+{% block title %}Tra cứu kết quả thi - Q-TEST{% endblock %}
 
-        /* Sidebar */
-        .sidebar {
-            width: 250px;
-            background: var(--brand);
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            flex-shrink: 0;
-        }
+{% block extra_css %}
+<style>
+    :root {
+        --brand-blue: #1565C0;
+        --card-bg: #F2F5F8; /* Hạ tông trắng xuống màu xám xanh dịu */
+        --text-main: #1e293b;
+        --text-sub: #64748b;
+    }
 
-        .brand {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            padding: 18px;
-        }
+    .title-page {
+        margin: 0 0 25px 0;
+        font-size: 22px;
+        font-weight: 800;
+        color: #1B2559;
+    }
 
-        .brand-mark {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            background: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
+    .cards-container {
+        display: grid;
+        /* Chỉnh grid để các ô nhỏ lại một xíu */
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+    }
 
-        .brand-title { font-size: 18px; font-weight: 700; line-height: 1.0; }
-        .brand-sub { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+    .result-card {
+        background: var(--card-bg); /* Nền giảm độ trắng */
+        border-radius: 15px; /* Bo góc vừa phải */
+        padding: 20px 25px; /* Thu nhỏ padding để ô gọn hơn */
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        min-height: 160px; /* Giảm chiều cao tổng thể */
+    }
 
-        .nav { display: flex; flex-direction: column; margin-top: 8px; }
-        .nav a {
-            padding: 12px 18px;
-            color: rgba(255, 255, 255, 0.92);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .nav a:hover { background: rgba(255, 255, 255, 0.12); }
-        .nav a.active {
-            background: rgba(255, 255, 255, 0.25);
-            border-left: 3px solid rgba(255, 255, 255, 0.95);
-            padding-left: 15px;
-        }
-        .sidebar-bottom { margin-top: auto; padding: 14px 18px; font-size: 12px; opacity: 0.9; }
+    .result-card:hover {
+        background: #ffffff;
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05);
+        border-color: var(--brand-blue);
+    }
 
-        /* Main */
-        .main {
-            flex: 1;
-            min-width: 0;
-            background: var(--panel);
-            min-height: 100vh;
-        }
+    .result-card h3 {
+        margin: 0 0 10px 0;
+        font-size: 18px; /* Giảm size chữ tiêu đề xí cho cân đối */
+        font-weight: 700;
+        color: var(--text-main);
+        text-align: left; /* Chữ bên trái */
+        line-height: 1.4;
+    }
 
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 22px;
-            border-bottom: 1px solid var(--border);
-        }
+    .result-meta {
+        margin: 0 0 6px 0;
+        font-size: 14px;
+        color: var(--text-sub);
+        text-align: left; /* Chữ bên trái */
+    }
 
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            color: rgba(0, 0, 0, 0.65);
-            font-size: 14px;
-        }
+    .result-score {
+        font-size: 15px;
+        color: var(--text-main);
+        font-weight: 600;
+        text-align: left; /* Chữ bên trái */
+        margin-bottom: 5px;
+    }
 
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
+    .result-footer {
+        display: flex;
+        justify-content: flex-end; /* Xem chi tiết bên phải */
+        margin-top: auto; /* Đẩy xuống đáy ô */
+    }
 
-        .icon-btn {
-            width: 34px;
-            height: 34px;
-            border-radius: 999px;
-            border: 1px solid var(--border);
-            background: #fff;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
+    .result-link {
+        color: #448AFF;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        font-style: italic;
+    }
 
-        .avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 999px;
-            background: #3a3434;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-        }
+    .result-link:hover {
+        text-decoration: underline;
+    }
 
-        .user-box { text-align: right; line-height: 1.1; font-size: 12px; }
-        .user-name { font-weight: 700; }
-        .user-role { font-weight: 400; opacity: 0.85; }
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 40px;
+        color: #94a3b8;
+    }
+</style>
+{% endblock %}
 
-        .content {
-            padding: 22px 26px;
-            background: #F7F7F7;
-            min-height: calc(100vh - 64px);
-        }
+{% block content %}
+<div class="content-wrapper">
+    <h1 class="title-page">Danh sách các bài thi đã làm</h1>
 
-        .title {
-            margin: 0 0 18px;
-            font-size: 20px;
-            font-weight: 700;
-        }
+    <div class="cards-container">
+        {% if ds_ket_qua %}
+            {% for kq in ds_ket_qua %}
+            <article class="result-card">
+                <h3>{{ kq.deThi.tenDeThi }}</h3>
+                <p class="result-meta">Thời gian nộp: {{ kq.thoiGianNopBai|date:"H:i d/m/Y" }}</p>
+                <p class="result-score">Điểm: {{ kq.diemSo }}/10</p>
 
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 360px));
-            gap: 22px 34px;
-            align-items: start;
-        }
-
-        .card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 18px 20px;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
-            border: 1px solid rgba(229, 231, 235, 0.65);
-        }
-
-        .card h3 {
-            margin: 0 0 8px;
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .meta {
-            margin: 0;
-            font-size: 14px;
-            color: rgba(17, 24, 39, 0.70);
-            line-height: 1.7;
-        }
-
-        .card-footer {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 10px;
-        }
-
-        .card a {
-            color: var(--brand);
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .card a:hover { text-decoration: underline; }
-
-        .empty {
-            color: var(--muted);
-            background: #fff;
-            padding: 18px 20px;
-            border-radius: 12px;
-            border: 1px dashed rgba(229, 231, 235, 0.9);
-            max-width: 640px;
-        }
-
-        @media (max-width: 980px) {
-            body { flex-direction: column; }
-            .sidebar { width: 100%; min-height: auto; }
-            .sidebar-bottom { display: none; }
-            .cards { grid-template-columns: 1fr; }
-            .main { min-height: auto; }
-        }
-    </style>
-</head>
-<body>
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-mark" aria-hidden="true">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1565C0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 6L9 17L4 12"></path>
-                </svg>
-            </div>
-            <div>
-                <div class="brand-title">Q - TEST</div>
-                <div class="brand-sub">Online System</div>
-            </div>
-        </div>
-
-        <nav class="nav">
-            <a href="{% url 'quiz:trang_chu' %}">Trang chủ</a>
-            <a href="{% url 'quiz:danh_sach_de_thi' %}">Thực hiện đề thi</a>
-            <a class="active" href="{% url 'quiz:tra_cuu_ket_qua' %}">Tra cứu kết quả thi</a>
-            <a href="{% url 'quiz:logout' %}">Đăng xuất</a>
-        </nav>
-
-        <div class="sidebar-bottom">Cài đặt</div>
-    </aside>
-
-    <main class="main">
-        <header class="topbar">
-            <a class="back-link" href="{% url 'quiz:trang_chu' %}">
-                <span aria-hidden="true">←</span>
-                <span>Quay lại</span>
-            </a>
-
-            <div class="header-right">
-                <button type="button" class="icon-btn" aria-label="Thông báo">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                    </svg>
-                </button>
-                <div class="avatar" aria-hidden="true">{{ user.ho_ten|default:"N"|first|upper }}</div>
-                <div class="user-box">
-                    <div class="user-name">{{ user.ho_ten|default:"Người học" }}</div>
-                    <div class="user-role">Người học</div>
+                <div class="result-footer">
+                    <a href="{% url 'quiz:xem_lai_bai_lam' kq.id %}" class="result-link">Xem Chi tiết</a>
                 </div>
-            </div>
-        </header>
-
-        <section class="content">
-            <h1 class="title">Danh sách các bài thi đã làm</h1>
-
-            {% if ds_ket_qua %}
-            <div class="cards">
-                {% for kq in ds_ket_qua %}
-                <article class="card">
-                    <h3>{{ kq.deThi.tenDeThi }}</h3>
-                    <p class="meta">Thời gian nộp: {{ kq.thoiGianNopBai|date:"H:i d/m/Y" }}</p>
-                    <p class="meta">Điểm: {{ kq.diemSo }}/10</p>
-                    <div class="card-footer">
-                        <a href="{% url 'quiz:xem_lai_bai_lam' kq.id %}">Xem Chi tiết</a>
-                    </div>
-                </article>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="empty">Bạn chưa hoàn thành bài thi nào.</div>
-            {% endif %}
-        </section>
-    </main>
-</body>
-</html>
+            </article>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">Bạn chưa hoàn thành bài thi nào.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
