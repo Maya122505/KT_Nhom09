@@ -1,191 +1,130 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Quản lý đề thi - Q-TEST</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root { --blue: #1e5bb8; --bg: #f4f7fe; --text: #1b2559; --gray: #64748b; --green-border: #10b981; }
-        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; background: var(--bg); height: 100vh; overflow: hidden; }
-        .sidebar { width: 240px; background: var(--blue); color: white; display: flex; flex-direction: column; }
-        .logo { padding: 25px; font-size: 20px; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .nav-link { padding: 15px 25px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 14px; transition: 0.3s; }
-        .nav-link.active, .nav-link:hover { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid white; }
-        .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-        .header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
-        .container { padding: 30px; }
-        .filter-bar { display: flex; gap: 15px; align-items: center; margin-bottom: 25px; }
-        .input-search { padding: 8px 15px; border: 1px solid #cbd5e1; border-radius: 4px; width: 250px; }
-        .select-filter { padding: 8px 15px; border: 1px solid #cbd5e1; border-radius: 4px; }
-        .btn-blue { background: var(--blue); color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; }
-        .btn-add { background: #1e5bb8; color: white; text-decoration: none; padding: 8px 20px; border-radius: 4px; margin-left: auto; font-size: 14px; font-weight: 600; border: none; cursor: pointer; }
-        .table-box { background: white; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-        th { background: #f8fafc; padding: 15px; color: #64748b; font-weight: 600; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 12px; }
-        td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: var(--text); }
-        tr:hover { background: #f8fafc; cursor: pointer; }
-        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-        .status-open { background: #dcfce7; color: #15803d; }
-        .status-closed { background: #fee2e2; color: #b91c1c; }
+{% extends 'base.html' %}
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-box { background: white; border-radius: 8px; padding: 25px; width: 800px; max-height: 90vh; overflow-y: auto; }
-        .input-q { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; box-sizing: border-box; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .hidden { display: none; }
+{% block title %}Danh sách bài thi - Q-TEST{% endblock %}
 
-        .q-card { border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: white; margin-bottom: 15px; }
-        .ans-row { padding: 10px; border: 1px solid #f1f5f9; margin-top: 5px; border-radius: 4px; font-size: 13px; }
-        .ans-correct { background: #dcfce7 !important; border-color: var(--green-border) !important; font-weight: 600; }
-    </style>
-</head>
-<body>
-
-<nav class="sidebar">
-    <div class="logo">Q - TEST</div>
-    <a href="{% url 'quiz:trang_chu' %}" class="nav-link">Trang chủ</a>
-    <a href="{% url 'quiz:quan_ly_de_thi' %}" class="nav-link active">Quản lý đề thi</a>
-    <a href="{% url 'quiz:ds_bai_thi_da_tao' %}" class="nav-link">Quản lý kết quả thi</a>
-    <a href="{% url 'quiz:ngan_hang_cau_hoi' %}" class="nav-link">Ngân hàng câu hỏi</a>
-    <a href="{% url 'quiz:logout' %}" class="nav-link" style="margin-top: auto;">Đăng xuất</a>
-</nav>
-
-<main class="main">
-    <div class="header">
-        <div style="color: #64748b; cursor: pointer;" onclick="location.href='{% url 'quiz:quan_ly_de_thi' %}'">← Quay lại danh sách</div>
-        <div style="font-weight: 600;">{{ user.ho_ten }} <span style="font-weight: 400; font-size: 12px; display: block; text-align: right;">Người dạy</span></div>
-    </div>
-
-    <div class="container" id="viewList">
-        <h2 style="font-size: 18px; margin-bottom: 20px;">Danh sách đề thi</h2>
-        <div class="filter-bar">
-            <input type="text" class="input-search" placeholder="Tìm kiếm đề thi...">
-            <select class="select-filter">
-                <option>Môn học</option>
-                {% for m in ds_mon %}<option>{{ m.tenMonHoc }}</option>{% endfor %}
-            </select>
-            <button class="btn-blue">Tìm kiếm</button>
-            <button class="btn-add" onclick="location.href='{% url 'quiz:tao_de_thi_moi' %}'">+ Thêm mới</button>
-        </div>
-
-        <div class="table-box">
-            <table>
-                <thead>
-                    <tr><th>STT</th><th>Tên đề thi</th><th>Lớp - Môn</th><th>Thời gian</th><th>Số câu</th><th>Trạng thái</th></tr>
-                </thead>
-             <tbody>
-    {% for de in ds_de_thi %}
-    <tr style="cursor: pointer;" onclick="window.location.href='?id_de={{ de.id }}'">
-        <td>{{ forloop.counter|stringformat:"03d" }}</td>
-        <td style="font-weight: 600; color: #1e5bb8;">{{ de.tenDeThi }}</td>
-        <td>{{ de.lopHoc.maLop }} - {{ de.lopHoc.monHoc.tenMonHoc }}</td>
-        <td>{{ de.thoiGianLamBai }} phút</td>
-        <td>{{ de.danhSachCauHoi.count }} câu</td>
-        <td>
-            {% if de.trangThai == 'DANG_THI' %}
-                <span class="status-badge status-open">Đang diễn ra</span>
-            {% elif de.trangThai == 'DA_CONG_BO' %}
-                <span class="status-badge" style="background:#fef08a; color:#854d0e;">Đã công bố</span>
-            {% elif de.trangThai == 'KET_THUC' %}
-                <span class="status-badge status-closed">Đã kết thúc</span>
-            {% else %}
-                <span class="status-badge" style="background:#e2e8f0; color:#475569;">Bản nháp</span>
-            {% endif %}
-        </td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="6" style="text-align: center; padding: 30px;">Chưa có dữ liệu đề thi</td></tr>
-    {% endfor %}
-</tbody>
-            </table>
-        </div>
-    </div>
-
-    <div id="viewPreview" class="container hidden">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <div>
-                <h2 id="prevTitle" style="margin:0; font-size:18px;"></h2>
-                <p id="prevSub" style="color:var(--gray); font-size:13px; margin:5px 0;"></p>
-            </div>
-            <button class="btn-blue" style="background:#64748b;" onclick="location.href='{% url 'quiz:quan_ly_de_thi' %}'">Quay lại</button>
-        </div>
-
-        <div style="background:white; padding:20px; border-radius:8px; border:1px solid #e2e8f0;">
-            <div style="display:flex; gap:30px; margin-bottom:20px; font-size:13px; border-bottom:1px solid #eee; padding-bottom:15px; flex-wrap: wrap;">
-                <span>Thời gian: <b id="prevTime"></b> phút</span>
-                <span>Tổng số câu: <b id="prevCount"></b></span>
-                <span>Môn học: <b id="prevMonHoc"></b></span>
-                <span>Số lần làm tối đa: <b id="prevSoLan"></b></span>
-            </div>
-
-            <div id="questionsContainer">
-                {% for item in ds_cau_hoi %}
-                <div class="q-card">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <span style="font-weight:700; color:var(--blue);">
-                            Câu hỏi số {{ forloop.counter }}
-                        </span>
-                    </div>
-
-                    <p style="font-weight:600; font-size: 15px; margin-bottom: 15px; color: #1b2559;">
-                        {{ item.noiDungCauHoi }}
-                    </p>
-
-                    <div class="options-list">
-                        {% for choice in item.cac_lua_chon.all %}
-                        <div class="ans-row {% if choice.dapAnDung %}ans-correct{% endif %}" style="margin-bottom: 5px; padding: 12px; border: 1px solid #f1f5f9; border-radius: 6px; cursor: default;">
-                            <span style="font-weight: 500; color: #1b2559;">{{ choice.noiDungLuaChon }}</span>
-                            {% if choice.dapAnDung %}
-                                <span style="color: #10b981; font-size: 11px; margin-left: 10px; font-weight: 600;">(Đáp án đúng)</span>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% empty %}
-                <p style="text-align: center; color: var(--gray); padding: 20px;">Không tìm thấy câu hỏi nào cho đề thi này.</p>
-                {% endfor %}
-            </div>
-
-            <div style="text-align:right; margin-top:30px; display:none;">
-                <button class="btn-blue" style="background:#ef4444;">Xoá đề thi</button>
-                <button class="btn-blue">Xác nhận tạo đề</button>
-            </div>
-        </div>
-    </div>
-
-    </main>
-
-<script>
-window.onload = function() {
-    // Lấy ID đề thi từ thanh địa chỉ URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const idDe = urlParams.get('id_de');
-
-    if (idDe) {
-        // Sử dụng biến dữ liệu Django để nạp thông tin thật từ database
-        const ten = "{{ de_thi.tenDeThi|default:''|escapejs }}";
-        const mon = "{{ de_thi.lopHoc.monHoc.tenMonHoc|default:''|escapejs }}";
-        const tg = "{{ de_thi.thoiGianLamBai|default:'0'|escapejs }}";
-        const sc = "{{ ds_cau_hoi|length|default:'0' }}";
-        const sl = "{{ de_thi.soLanLamToiDa|default:'1' }}";
-
-        if (ten !== "") {
-            // Hiển thị khung xem chi tiết đề thi, ẩn danh sách
-            document.getElementById('viewList').style.display = 'none';
-            document.getElementById('viewPreview').style.display = 'block';
-            document.getElementById('viewPreview').classList.remove('hidden');
-
-            // Cập nhật thông tin vào giao diện
-            document.getElementById('prevTitle').innerText = "Nội dung đề: " + ten;
-            document.getElementById('prevSub').innerText = "Môn học: " + mon;
-            document.getElementById('prevTime').innerText = tg;
-            document.getElementById('prevCount').innerText = sc + " câu";
-            document.getElementById('prevMonHoc').innerText = mon;
-            document.getElementById('prevSoLan').innerText = sl;
-        }
+{% block extra_css %}
+<style>
+    /* GIỮ NGUYÊN TOÀN BỘ LOGIC TỈ LỆ VÀ CSS GỐC CỦA UYÊN */
+    :root {
+        --base-w: 1440;
+        --base-h: 1024;
     }
-};
-</script>
-</body>
-</html>
+
+    .f-title {
+        font-weight: 700; 
+        font-size: 2.2vw; 
+        opacity: 0.8;
+        margin-bottom: 20px;
+        margin-left: 20px;
+    }
+
+    /* --- TỐI ƯU HÓA LIST CARD --- */
+    .f-cards-wrapper {
+        width: 100%;
+        display: flex;
+        gap: calc(44 / var(--base-w) * 100vw);
+        flex-wrap: wrap;
+        padding-bottom: 50px;
+    }
+
+    .f-card {
+        position: relative;
+        width: calc(517 / var(--base-w) * 100vw);
+        height: calc(399 / var(--base-h) * 100vh);
+        background: #FFFFFF; border-radius: 20px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
+        flex-shrink: 0;
+        margin-bottom: 20px;
+    }
+
+    .f-card-title {
+        position: absolute;
+        left: calc(69 / var(--base-w) * 100vw);
+        top: calc(28 / var(--base-h) * 100vh);
+        font-weight: 700; font-size: 2.2vw; opacity: 0.8;
+        width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .f-info-group {
+        position: absolute;
+        left: calc(133 / var(--base-w) * 100vw);
+        top: calc(86 / var(--base-h) * 100vh);
+        font-size: 1.8vw; line-height: 1.8;
+    }
+
+    .f-icon {
+        position: absolute;
+        width: 2.5vw; height: 2.5vw;
+        left: calc(61 / var(--base-w) * 100vw);
+    }
+    .icon-time { top: calc(99 / var(--base-h) * 100vh); }
+    .icon-ques { top: calc(144 / var(--base-h) * 100vh); }
+    .icon-sync { top: calc(201 / var(--base-h) * 100vh); }
+
+    .f-status {
+        position: absolute;
+        left: calc(65 / var(--base-w) * 100vw);
+        top: calc(259 / var(--base-h) * 100vh);
+        font-size: 1.5vw; font-weight: 600;
+    }
+
+    .f-btn {
+        position: absolute;
+        width: calc(378 / var(--base-w) * 100vw);
+        height: calc(66 / var(--base-h) * 100vh);
+        left: calc(69 / var(--base-w) * 100vw);
+        top: calc(311 / var(--base-h) * 100vh);
+        background: #1565C0; border-radius: 8px;
+        color: white !important; display: flex; align-items: center;
+        justify-content: center; text-decoration: none;
+        font-weight: 500; font-size: 2vw; transition: 0.2s;
+    }
+
+    .f-btn:hover { background: #0d47a1; }
+    .f-btn.disabled { background: #9ca3af; cursor: not-allowed; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="padding: 10px;">
+    <a href="#" onclick="history.back(); return false;" style="text-decoration:none; font-size: 1.5vw; color: #666; margin-bottom: 20px; display: inline-block;">← Quay lại</a>
+
+    <h1 class="f-title">Danh sách bài thi</h1>
+
+    <div class="f-cards-wrapper">
+        {% for de in ds_de_thi %}
+        <div class="f-card">
+            <div class="f-card-title" title="{{ de.tenDeThi }}">{{ de.tenDeThi }}</div>
+
+            <img src="https://cdn-icons-png.flaticon.com/512/109/109613.png" class="f-icon icon-time" alt="thoi gian">
+            <img src="https://cdn-icons-png.flaticon.com/512/5726/5726470.png" class="f-icon icon-ques" alt="so cau">
+            <img src="https://cdn-icons-png.flaticon.com/512/126/126502.png" class="f-icon icon-sync" alt="so luot">
+
+            <div class="f-info-group">
+                {{ de.thoiGianLamBai }} phút<br>
+                {{ de.danhSachCauHoi.count }} câu<br>
+                {{ de.so_luot_con_lai }}/{{ de.soLanLamToiDa }} lượt
+            </div>
+
+            {% if de.trangThai == 'DANG_THI' %}
+                <div class="f-status" style="color: #10b981;">Đang mở</div>
+            {% elif de.trangThai == 'DA_CONG_BO' %}
+                <div class="f-status" style="color: #eab308;">Sắp mở</div>
+            {% else %}
+                <div class="f-status" style="color: #ef4444;">Đã đóng</div>
+            {% endif %}
+
+            {% if de.trangThai == 'DANG_THI' and de.so_luot_con_lai > 0 %}
+                <a href="{% url 'quiz:xac_nhan_thi' de.id %}" class="f-btn">Bắt đầu làm bài</a>
+            {% elif de.trangThai == 'DANG_THI' and de.so_luot_con_lai <= 0 %}
+                <a href="#" class="f-btn disabled" onclick="return false;">Đã hết lượt</a>
+            {% else %}
+                <a href="#" class="f-btn disabled" onclick="return false;">Không khả dụng</a>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div style="font-size: 1.5vw; color: #6b7280; padding: 20px;">Bạn chưa có bài thi nào sắp tới.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
