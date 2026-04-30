@@ -1,295 +1,112 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chi tiết bài thi - Q-TEST</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --brand: #1565C0;
-            --bg: #EEF2F7;
-            --panel: #FFFFFF;
-            --border: #E5E7EB;
-            --text: #111827;
-            --muted: rgba(17, 24, 39, 0.60);
-            --ok: #15803D;
-            --bad: #DC2626;
-        }
+{% extends 'base.html' %}
 
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            font-family: 'Roboto', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            display: flex;
-        }
+{% block title %}Chi tiết bài làm - Q-TEST{% endblock %}
 
-        /* Sidebar */
-        .sidebar {
-            width: 250px;
-            background: var(--brand);
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            flex-shrink: 0;
-        }
+{% block extra_css %}
+<style>
+    :root {
+        --ok-green: #15803D !important; /* Xanh lá rực rỡ */
+        --bad-red: #DC2626 !important;  /* Đỏ chuẩn Figma */
+        --card-bg: #F8FAFC;
+    }
 
-        .brand {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            padding: 18px;
-        }
+    .crumb-nav { display: flex; align-items: center; gap: 8px; font-size: 18px; margin-bottom: 25px; color: #1B2559; font-weight: 700; }
+    .crumb-nav .sep { color: #CBD5E1; padding: 0 5px; font-weight: 400; }
 
-        .brand-mark {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            background: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
+    .info-card {
+        background: var(--card-bg); border-radius: 20px; padding: 25px 35px;
+        border: 1px solid #E2E8F0; margin-bottom: 25px; max-width: 950px;
+    }
+    .info-line { margin: 8px 0; font-size: 18px; color: #334155; }
+    .info-line b { font-weight: 800; color: #000; }
 
-        .brand-title { font-size: 18px; font-weight: 700; line-height: 1.0; }
-        .brand-sub { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+    .questions-card {
+        background: var(--card-bg); border-radius: 20px; padding: 20px 40px;
+        border: 1px solid #E2E8F0; max-width: 950px;
+    }
 
-        .nav { display: flex; flex-direction: column; margin-top: 8px; }
-        .nav a {
-            padding: 12px 18px;
-            color: rgba(255, 255, 255, 0.92);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .nav a:hover { background: rgba(255, 255, 255, 0.12); }
-        .nav a.active {
-            background: rgba(255, 255, 255, 0.25);
-            border-left: 3px solid rgba(255, 255, 255, 0.95);
-            padding-left: 15px;
-        }
-        .sidebar-bottom { margin-top: auto; padding: 14px 18px; font-size: 12px; opacity: 0.9; }
+    .q-item { padding: 30px 0; border-bottom: 1px solid #E2E8F0; }
+    .q-item:last-child { border-bottom: none; }
 
-        /* Main */
-        .main {
-            flex: 1;
-            min-width: 0;
-            background: var(--panel);
-            min-height: 100vh;
-        }
+    .q-header { font-size: 19px; margin-bottom: 12px; color: #111827; font-weight: 800; }
+    .q-text-normal { font-weight: 400; }
 
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 22px;
-            border-bottom: 1px solid var(--border);
-        }
+    .res-line { display: flex; align-items: flex-start; gap: 12px; margin: 8px 0; font-size: 18px; line-height: 1.5; }
+    .icon-box { width: 25px; font-weight: 900; font-size: 22px; flex-shrink: 0; text-align: center; }
 
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            color: rgba(0, 0, 0, 0.65);
-            font-size: 14px;
-        }
+    /* --- PHẦN QUAN TRỌNG: ĐỊNH DẠNG MÀU SẮC RỰC RỠ --- */
 
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
+    /* Khi trả lời ĐÚNG: Toàn bộ dòng chữ và icon sẽ màu Xanh */
+    .txt-green, .txt-green * {
+        color: #15803D !important;
+        fill: #15803D !important;
+    }
 
-        .icon-btn {
-            width: 34px;
-            height: 34px;
-            border-radius: 999px;
-            border: 1px solid var(--border);
-            background: #fff;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
+    /* Khi trả lời SAI: Toàn bộ dòng chữ và icon sẽ màu Đỏ */
+    .txt-red, .txt-red * {
+        color: #DC2626 !important;
+        fill: #DC2626 !important;
+    }
 
-        .avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 999px;
-            background: #3a3434;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-        }
+    .label-bold { font-weight: 700; }
+    .content-normal { font-weight: 400; }
+</style>
+{% endblock %}
 
-        .user-box { text-align: right; line-height: 1.1; font-size: 12px; }
-        .user-name { font-weight: 700; }
-        .user-role { font-weight: 400; opacity: 0.85; }
+{% block content %}
+<div class="content-wrapper">
+    <div class="crumb-nav">
+        <span>Tra cứu kết quả</span>
+        <span class="sep">→</span>
+        <span>{{ ket_qua.deThi.tenDeThi }}</span>
+    </div>
 
-        .content {
-            padding: 22px 26px;
-            background: #F7F7F7;
-            min-height: calc(100vh - 64px);
-        }
+    <div class="info-card">
+        <p class="info-line">Tên đề: <b>{{ ket_qua.deThi.tenDeThi }}</b></p>
+        <p class="info-line">Ngày thi: <b>{{ ket_qua.thoiGianNopBai|date:"d/m/Y" }}</b></p>
+        <p class="info-line">Kết quả điểm: <b style="font-size: 22px; color: #1565C0;">{{ ket_qua.diemSo }} / 10</b></p>
+    </div>
 
-        .crumb {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 18px;
-            font-weight: 700;
-            margin: 0 0 14px;
-        }
+    <div class="questions-card">
+        {% for item in chi_tiet %}
+        <div class="q-item">
+            <p class="q-header">
+                Câu {{ forloop.counter }}:
+                <span class="q-text-normal">{{ item.cauHoi.noiDungCauHoi }}</span>
+            </p>
 
-        .crumb .sep { color: rgba(17, 24, 39, 0.35); }
-
-        .card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 16px 18px;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
-            border: 1px solid rgba(229, 231, 235, 0.65);
-            max-width: 720px;
-        }
-
-        .card + .card { margin-top: 18px; }
-
-        .info-line { margin: 0; font-size: 16px; line-height: 1.4; }
-        .info-line b { font-weight: 700; }
-
-        .q-item { padding: 10px 0; }
-        .q-item + .q-item { padding-top: 16px; border-top: 1px solid rgba(229, 231, 235, 0.8); }
-
-        .q-title {
-            margin: 0 0 6px;
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .line {
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
-            margin: 2px 0;
-            font-size: 18px;
-        }
-
-        .mark {
-            width: 18px;
-            display: inline-flex;
-            justify-content: center;
-            font-weight: 900;
-        }
-
-        .pick.ok { color: var(--ok); }
-        .pick.bad { color: var(--bad); }
-        .answer { color: var(--ok); }
-
-        @media (max-width: 980px) {
-            body { flex-direction: column; }
-            .sidebar { width: 100%; min-height: auto; }
-            .sidebar-bottom { display: none; }
-            .card { max-width: 100%; }
-        }
-    </style>
-</head>
-<body>
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-mark" aria-hidden="true">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1565C0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 6L9 17L4 12"></path>
-                </svg>
+            <div class="res-line {% if item.luaChonDaChon and item.luaChonDaChon.dapAnDung %}txt-green{% else %}txt-red{% endif %}">
+                <span class="icon-box">
+                    {% if item.luaChonDaChon and item.luaChonDaChon.dapAnDung %}✓{% else %}✗{% endif %}
+                </span>
+                <span>
+                    <span class="label-bold">Bạn chọn:</span>
+                    <span class="content-normal">
+                        {% if item.luaChonDaChon %}{{ item.luaChonDaChon.noiDungLuaChon }}{% else %}Bỏ trống{% endif %}
+                    </span>
+                </span>
             </div>
-            <div>
-                <div class="brand-title">Q - TEST</div>
-                <div class="brand-sub">Online System</div>
+
+            <div class="res-line txt-green">
+                <span class="icon-box"></span>
+                <span>
+                    <span class="label-bold">Đáp án đúng:</span>
+                    <span class="content-normal">
+                        {% for choice in item.cauHoi.cac_lua_chon.all %}
+                            {% if choice.dapAnDung %}{{ choice.noiDungLuaChon }}{% endif %}
+                        {% endfor %}
+                    </span>
+                </span>
             </div>
         </div>
+        {% endfor %}
+    </div>
+</div>
 
-        <nav class="nav">
-            <a href="{% url 'quiz:trang_chu' %}">Trang chủ</a>
-            <a href="{% url 'quiz:danh_sach_de_thi' %}">Thực hiện đề thi</a>
-            <a class="active" href="{% url 'quiz:tra_cuu_ket_qua' %}">Tra cứu kết quả thi</a>
-            <a href="{% url 'quiz:logout' %}">Đăng xuất</a>
-        </nav>
-
-        <div class="sidebar-bottom">Cài đặt</div>
-    </aside>
-
-    <main class="main">
-        <header class="topbar">
-            <a class="back-link" href="{% url 'quiz:tra_cuu_ket_qua' %}">
-                <span aria-hidden="true">←</span>
-                <span>Quay lại</span>
-            </a>
-
-            <div class="header-right">
-                <button type="button" class="icon-btn" aria-label="Thông báo">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                    </svg>
-                </button>
-                <div class="avatar" aria-hidden="true">{{ ket_qua.sinhVien.ho_ten|default:"N"|first|upper }}</div>
-                <div class="user-box">
-                    <div class="user-name">{{ ket_qua.sinhVien.ho_ten|default:"Người học" }}</div>
-                    <div class="user-role">Người học</div>
-                </div>
-            </div>
-        </header>
-
-        <section class="content">
-            <h1 class="crumb">
-                <span>Danh sách các bài thi đã làm</span>
-                <span class="sep">→</span>
-                <span>{{ ket_qua.deThi.tenDeThi }}</span>
-            </h1>
-
-            <div class="card">
-                <p class="info-line">Tên đề: <b>{{ ket_qua.deThi.tenDeThi }}</b></p>
-                <p class="info-line">Ngày thi: <b>{{ ket_qua.thoiGianNopBai|date:"d/m/Y" }}</b></p>
-                <p class="info-line">Điểm: <b>{{ ket_qua.diemSo }}</b> / 10</p>
-            </div>
-
-            <div class="card">
-                {% for item in chi_tiet %}
-                <div class="q-item">
-                    <p class="q-title">Câu {{ forloop.counter }}: {{ item.cauHoi.noiDungCauHoi }}</p>
-
-                    <div class="line pick {% if item.luaChonDaChon and item.luaChonDaChon.dapAnDung %}ok{% else %}bad{% endif %}">
-                        <span class="mark" aria-hidden="true">{% if item.luaChonDaChon and item.luaChonDaChon.dapAnDung %}✓{% else %}✗{% endif %}</span>
-                        <span><b>Bạn chọn:</b>
-                            {% if item.luaChonDaChon %}
-                                {{ item.luaChonDaChon.noiDungLuaChon }}
-                            {% else %}
-                                <i style="color: #9ca3af; font-size: 16px;">(Bỏ trống)</i>
-                            {% endif %}
-                        </span>
-                    </div>
-
-                    <div class="line answer">
-                        <span class="mark" aria-hidden="true"></span>
-                        <span><b>Đáp án đúng:</b>
-                            {% for choice in item.cauHoi.cac_lua_chon.all %}
-                                {% if choice.dapAnDung %}{{ choice.noiDungLuaChon }}{% endif %}
-                            {% endfor %}
-                        </span>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="q-item" style="color: var(--muted);">Không có dữ liệu chi tiết bài làm.</div>
-                {% endfor %}
-            </div>
-        </section>
-    </main>
-</body>
-</html>
+<script>
+    // Xóa chữ (Biến thể...) để sạch giao diện
+    document.querySelectorAll('.q-text-normal, .content-normal').forEach(function(el) {
+        el.textContent = el.textContent.replace(/\(Biến thể\s*\d+\)/g, '').trim();
+    });
+</script>
+{% endblock %}
