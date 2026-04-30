@@ -1,95 +1,97 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Chi tiết bài làm - Q-TEST</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root { --blue: #1e5bb8; --bg: #f4f7fe; --text: #1b2559; --gray: #64748b; }
-        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; background: var(--bg); min-height: 100vh; }
-        .sidebar { width: 240px; background: var(--blue); color: white; display: flex; flex-direction: column; min-height: 100vh; }
-        .logo { padding: 25px; font-size: 20px; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .nav-link { padding: 15px 25px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 14px; }
-        .nav-link.active { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid white; }
-        .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-        .container { padding: 30px; }
-        .table-box { background: white; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { background: #f8fafc; padding: 15px; color: #64748b; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: var(--text); font-size: 14px; }
-        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-        .status-true { background: #dcfce7; color: #15803d; }
-        .status-false { background: #fee2e2; color: #b91c1c; }
-    </style>
-</head>
-<body>
+{% extends 'base.html' %}
 
-<nav class="sidebar">
-    <div class="logo">Q - TEST</div>
-    <a href="{% url 'quiz:trang_chu' %}" class="nav-link">Trang chủ</a>
-    <a href="{% url 'quiz:quan_ly_de_thi' %}" class="nav-link">Quản lý đề thi</a>
-    <a href="{% url 'quiz:ds_bai_thi_da_tao' %}" class="nav-link active">Quản lý kết quả</a>
-    <a href="{% url 'quiz:quan_ly_de_thi' %}" class="nav-link">Ngân hàng câu hỏi</a>
-    <a href="{% url 'quiz:logout' %}" class="nav-link" style="margin-top: auto;">Đăng xuất</a>
-</nav>
+{% block title %}Chi tiết bài làm - Q-TEST{% endblock %}
 
-<main class="main">
-    <div class="container">
-        <div style="margin-bottom:20px; display:flex; align-items:center; gap:15px;">
-            <button onclick="history.back()" style="background:#64748b; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">← Quay lại</button>
-            <h2 style="margin:0; font-size:18px;">Chi tiết bài làm: {{ ket_qua.sinhVien.ho_ten }}</h2>
-        </div>
+{% block extra_css %}
+<style>
+    /* GIỮ NGUYÊN CSS RUỘT CỦA BẠN */
+    :root { --blue: #1e5bb8; --bg: #f4f7fe; --text: #1b2559; --gray: #64748b; }
+    
+    .table-box { 
+        background: white; 
+        border-radius: 8px; 
+        border: 1px solid #e2e8f0; 
+        overflow: hidden; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+        margin-top: 20px;
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { background: #f8fafc; padding: 15px; color: #64748b; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+    td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: var(--text); font-size: 14px; }
+    
+    .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .status-true { background: #dcfce7; color: #15803d; }
+    .status-false { background: #fee2e2; color: #b91c1c; }
+    
+    .btn-back { 
+        background: #64748b; 
+        color: white; 
+        border: none; 
+        padding: 8px 15px; 
+        border-radius: 4px; 
+        cursor: pointer; 
+        text-decoration: none;
+        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+    }
+</style>
+{% endblock %}
 
-        <div class="table-box">
-            <table>
-                <thead>
-                    <tr>
-                        <th>STT</th>
-                        <th>Câu hỏi</th>
-                        <th>Đáp án đã chọn</th>
-                        <th>Đáp án đúng</th>
-                        <th>Kết quả</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for ct in chi_tiet %}
-                    <tr>
-                        <td>{{ forloop.counter }}</td>
-
-                        <td style="font-weight: 500; max-width: 300px;">{{ ct.cauHoi.noiDungCauHoi }}</td>
-
-                        <td>
-                            {% if ct.luaChonDaChon %}
-                                {{ ct.luaChonDaChon.noiDungLuaChon }}
-                            {% else %}
-                                <span style="color: #94a3b8; font-style: italic;">(Bỏ trống)</span>
-                            {% endif %}
-                        </td>
-
-                        <td style="color: #10b981; font-weight: 600;">
-                            {% for choice in ct.cauHoi.cac_lua_chon.all %}
-                                {% if choice.dapAnDung %}
-                                    {{ choice.noiDungLuaChon }}
-                                {% endif %}
-                            {% endfor %}
-                        </td>
-
-                        <td>
-                            {% if ct.luaChonDaChon and ct.luaChonDaChon.dapAnDung %}
-                                <span class="status-badge status-true">Đúng</span>
-                            {% else %}
-                                <span class="status-badge status-false">Sai</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="5" style="text-align:center; padding:20px;">Không có dữ liệu chi tiết bài làm.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+{% block content %}
+<div class="container" style="padding: 10px;">
+    <div style="margin-bottom:20px; display:flex; align-items:center; gap:15px;">
+        <a href="javascript:history.back()" class="btn-back">← Quay lại</a>
+        <h2 style="margin:0; font-size:18px; color: var(--text);">Chi tiết bài làm: {{ ket_qua.sinhVien.ho_ten }}</h2>
     </div>
-</main>
 
-</body>
-</html>
+    <div class="table-box">
+        <table>
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Câu hỏi</th>
+                    <th>Đáp án đã chọn</th>
+                    <th>Đáp án đúng</th>
+                    <th>Kết quả</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ct in chi_tiet %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+
+                    <td style="font-weight: 500; max-width: 300px;">{{ ct.cauHoi.noiDungCauHoi }}</td>
+
+                    <td>
+                        {% if ct.luaChonDaChon %}
+                            {{ ct.luaChonDaChon.noiDungLuaChon }}
+                        {% else %}
+                            <span style="color: #94a3b8; font-style: italic;">(Bỏ trống)</span>
+                        {% endif %}
+                    </td>
+
+                    <td style="color: #10b981; font-weight: 600;">
+                        {% for choice in ct.cauHoi.cac_lua_chon.all %}
+                            {% if choice.dapAnDung %}
+                                {{ choice.noiDungLuaChon }}
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+
+                    <td>
+                        {% if ct.luaChonDaChon and ct.luaChonDaChon.dapAnDung %}
+                            <span class="status-badge status-true">Đúng</span>
+                        {% else %}
+                            <span class="status-badge status-false">Sai</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align:center; padding:20px;">Không có dữ liệu chi tiết bài làm.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
