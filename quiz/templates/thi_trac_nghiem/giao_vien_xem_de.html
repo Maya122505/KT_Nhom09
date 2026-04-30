@@ -1,89 +1,92 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Nội dung đề: {{ de_thi.tenDeThi }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root { --blue: #1e5bb8; --bg: #f4f7fe; --text: #1b2559; --green: #10b981; }
-        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+{% extends 'base.html' %}
 
-        /* Sidebar trái */
-        .sidebar { width: 260px; background: var(--blue); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
-        .logo { padding: 30px 20px; font-size: 24px; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .nav-link { padding: 15px 25px; color: rgba(255,255,255,0.8); text-decoration: none; transition: 0.3s; font-size: 14px; }
-        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid white; }
+{% block title %}Nội dung đề: {{ de_thi.tenDeThi }} - Q-TEST{% endblock %}
 
-        /* Nội dung chính */
-        .main { flex: 1; padding: 40px; overflow-y: auto; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .back-link { text-decoration: none; color: #718096; font-size: 14px; margin-bottom: 20px; display: inline-block; }
+{% block extra_css %}
+<style>
+    /* GIỮ NGUYÊN CSS RUỘT CỦA UYÊN */
+    :root { --blue: #1e5bb8; --text: #1b2559; --green: #10b981; }
 
-        /* Khối câu hỏi */
-        .question-card {
-            background: white; padding: 30px; border-radius: 12px;
-            margin-bottom: 25px; border: 1px solid #edf2f7;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-        }
-        .q-title {
-            font-size: 18px; font-weight: 700; color: var(--blue);
-            margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;
-        }
-        .option-list { list-style: none; padding: 0; margin-top: 15px; }
-        .option-item { padding: 10px 15px; border-radius: 6px; margin-bottom: 8px; background: #f8fafc; border: 1px solid #e2e8f0; }
-        .correct { background: #dcfce7; border-color: #10b981; color: #065f46; font-weight: 600; }
+    .back-link { text-decoration: none; color: #718096; font-size: 14px; margin-bottom: 20px; display: inline-block; font-weight: 600; }
 
-        .avatar { width: 42px; height: 42px; background: #2d3748; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
-    </style>
-</head>
-<body>
+    /* Khối câu hỏi */
+    .question-card {
+        background: white; 
+        padding: 30px; 
+        border-radius: 12px;
+        margin-bottom: 25px; 
+        border: 1px solid #edf2f7;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    }
+    .q-title {
+        font-size: 18px; 
+        font-weight: 700; 
+        color: var(--blue);
+        margin-bottom: 15px; 
+        border-bottom: 1px solid #f1f5f9; 
+        padding-bottom: 10px;
+        line-height: 1.5;
+    }
+    .option-list { list-style: none; padding: 0; margin-top: 15px; }
+    .option-item { 
+        padding: 12px 15px; 
+        border-radius: 8px; 
+        margin-bottom: 10px; 
+        background: #f8fafc; 
+        border: 1px solid #e2e8f0; 
+        font-size: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    /* Style đáp án đúng của Uyên */
+    .correct { 
+        background: #dcfce7; 
+        border-color: #10b981; 
+        color: #065f46; 
+        font-weight: 600; 
+    }
+</style>
+{% endblock %}
 
-    <nav class="sidebar">
-        <div class="logo">Q-TEST System</div>
-        <a href="{% url 'quiz:trang_chu' %}" class="nav-link">Trang chủ</a>
-        <a href="{% url 'quiz:quan_ly_de_thi' %}" class="nav-link active">Quản lý đề thi</a>
-        <a href="{% url 'quiz:ds_bai_thi_da_tao' %}" class="nav-link">Quản lý kết quả</a>
-        <a href="{% url 'quiz:ngan_hang_cau_hoi' %}" class="nav-link">Ngân hàng câu hỏi</a>
-        <a href="{% url 'quiz:logout' %}" class="nav-link" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1);">Đăng xuất</a>
-    </nav>
+{% block content %}
+<div class="content-body" style="padding: 10px;">
+    <div style="margin-bottom: 30px;">
+        <a href="{% url 'quiz:quan_ly_de_thi' %}" class="back-link">← Quay lại danh sách</a>
+        <h1 style="font-size: 28px; margin: 0; font-weight: 800; color: var(--text);">Nội dung đề: {{ de_thi.tenDeThi }}</h1>
+    </div>
 
-    <main class="main">
-        <div class="top-bar">
-            <div>
-                <a href="{% url 'quiz:quan_ly_de_thi' %}" class="back-link">← Quay lại danh sách</a>
-                <h1 style="font-size: 24px; margin: 0;">Nội dung đề: {{ de_thi.tenDeThi }}</h1>
-            </div>
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="text-align: right;">
-                    <div style="font-weight: 700;">{{ user.ho_ten }}</div>
-                    <small style="color: #718096;">Người dạy</small>
-                </div>
-                <div class="avatar">{{ user.ho_ten|first|upper }}</div>
-            </div>
+    {% for item in ds_cau_hoi %}
+    <div class="question-card">
+        <div class="q-title">
+            Câu {{ forloop.counter }}:
+            <span style="color: var(--text); margin-left: 5px;">{{ item.noiDungCauHoi }}</span>
         </div>
 
-        <div class="content-body">
-            {% for item in ds_cau_hoi %}
-            <div class="question-card">
-                <div class="q-title">
-                    Câu {{ forloop.counter }}:
-                    <span style="color: var(--text);">{{ item.noiDungCauHoi }}</span>
-                </div>
-
-                <div class="option-list">
-                    {% for lc in item.cac_lua_chon.all %}
-                    <div class="option-item {% if lc.dapAnDung %}correct{% endif %}">
-                        <b>{{ forloop.counter|stringformat:"c"|upper }}.</b> {{ lc.noiDungLuaChon }}
-                        {% if lc.dapAnDung %} <span style="float: right;">✔ Đáp án đúng</span> {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
+        <div class="option-list">
+            {% for lc in item.cac_lua_chon.all %}
+            <div class="option-item {% if lc.dapAnDung %}correct{% endif %}">
+                <span>
+                    <b style="margin-right: 8px;">
+                        {% if forloop.counter == 1 %}A.
+                        {% elif forloop.counter == 2 %}B.
+                        {% elif forloop.counter == 3 %}C.
+                        {% elif forloop.counter == 4 %}D.
+                        {% endif %}
+                    </b> 
+                    {{ lc.noiDungLuaChon }}
+                </span>
+                {% if lc.dapAnDung %}
+                    <span style="font-size: 13px;">✔ Đáp án đúng</span>
+                {% endif %}
             </div>
-            {% empty %}
-            <p>Đề thi này chưa có câu hỏi nào.</p>
             {% endfor %}
         </div>
-    </main>
-
-</body>
-</html>
+    </div>
+    {% empty %}
+    <div style="background: white; padding: 40px; border-radius: 12px; text-align: center; border: 2px dashed #cbd5e0;">
+        <p style="color: #718096; font-size: 16px; font-weight: 500;">Đề thi này chưa có câu hỏi nào trong ngân hàng.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
