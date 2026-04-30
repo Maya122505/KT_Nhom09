@@ -1,168 +1,159 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danh sách bài thi - Q-TEST</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root { --blue: #1e5bb8; --bg: #f4f7fe; --text: #1b2559; --muted: #718096; }
-        * { box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+{% extends 'base.html' %}
 
-        /* Sidebar giống các trang khác */
-        .sidebar { width: 260px; background: var(--blue); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
-        .logo { padding: 30px 20px; font-size: 24px; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .nav-link { padding: 15px 25px; color: rgba(255,255,255,0.8); text-decoration: none; transition: 0.3s; font-size: 14px; }
-        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid white; }
+{% block title %}Danh sách bài thi - Q-TEST{% endblock %}
 
-        /* Main giống các trang khác */
-        .main { flex: 1; padding: 40px; overflow-y: auto; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-        .back-link { display: inline-flex; align-items: center; gap: 10px; color: rgba(0,0,0,0.8); text-decoration: none; font-size: 16px; }
+{% block extra_css %}
+<style>
+    :root { --blue: #1e5bb8; --text-dark: #1b2559; }
 
-        .avatar { width: 42px; height: 42px; background: #2d3748; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+    /* Xóa khoảng cách header thừa */
+    .main { padding-top: 10px; }
 
-        h1.page-title { font-size: 32px; margin: 0 0 20px; color: rgba(0,0,0,0.85); }
+    h1.page-title {
+        font-size: 24px; /* Thu nhỏ tiêu đề chính */
+        font-weight: 800;
+        margin: 0 0 25px;
+        color: var(--text-dark);
+    }
 
-        /* Cards gần Figma nhưng đồng bộ style dự án */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 28px;
-            max-width: 1120px;
-        }
-        .exam-card {
-            background: white;
-            border-radius: 20px;
-            border: 1px solid #edf2f7;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
-            padding: 22px 22px 18px;
-            min-height: 280px;
-            display: flex;
-            flex-direction: column;
-        }
-        .exam-title { font-size: 30px; font-weight: 800; margin: 0 0 14px; color: rgba(0,0,0,0.85); }
+    .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); /* Card gọn hơn */
+        gap: 25px;
+        max-width: 1200px;
+    }
 
-        .meta { display: flex; flex-direction: column; gap: 12px; margin: 6px 0 14px; }
-        .meta-row { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 600; color: rgba(0,0,0,0.85); }
-        .icon {
-            width: 34px; height: 34px; border-radius: 999px;
-            border: 2px solid var(--blue);
-            display: grid; place-items: center;
-            flex: 0 0 auto;
-        }
-        .icon svg { width: 18px; height: 18px; stroke: var(--blue); }
+    .exam-card {
+        background: white;
+        border-radius: 15px; /* Bo góc nhẹ hơn */
+        border: 1px solid #edf2f7;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        padding: 25px;
+        display: flex;
+        flex-direction: column;
+        transition: 0.3s;
+    }
+    .exam-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
 
-        .status { margin-top: auto; margin-bottom: 14px; font-size: 14px; color: #a0aec0; font-weight: 600; }
+    .exam-title {
+        font-size: 20px; /* Font tiêu đề đề thi nhỏ lại */
+        font-weight: 800;
+        margin: 0 0 15px;
+        color: var(--text-dark);
+        line-height: 1.3;
+    }
 
-        .btn {
-            height: 56px;
-            border-radius: 12px;
-            background: var(--blue);
-            color: white;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: 0.2px;
-        }
-        .btn.disabled { opacity: 0.7; cursor: not-allowed; }
+    .meta { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
 
-        @media (max-width: 1100px) {
-            .main { padding: 28px; }
-            .cards-grid { grid-template-columns: 1fr; max-width: 720px; }
-            h1.page-title { font-size: 28px; }
-            .exam-title { font-size: 26px; }
-            .btn { font-size: 20px; }
-        }
-        @media (max-width: 720px) {
-            body { height: auto; overflow: auto; }
-            .sidebar { width: 220px; }
-            .main { padding: 18px; }
-        }
-    </style>
-</head>
-<body>
+    .meta-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 15px; /* Font thông tin nhỏ lại */
+        font-weight: 600;
+        color: #4a5568;
+    }
 
-<nav class="sidebar">
-    <div class="logo">Q-TEST System</div>
-    <a href="{% url 'quiz:trang_chu' %}" class="nav-link">Trang chủ</a>
-    <a href="{% url 'quiz:danh_sach_de_thi' %}" class="nav-link active">Thực hiện đề thi</a>
-    <a href="{% url 'quiz:tra_cuu_ket_qua' %}" class="nav-link">Tra cứu kết quả</a>
-    <a href="{% url 'quiz:logout' %}" class="nav-link" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1);">Đăng xuất</a>
-</nav>
+    .icon {
+        width: 30px; height: 30px; /* Icon nhỏ lại */
+        border-radius: 50%;
+        border: 1.5px solid var(--blue);
+        display: grid; place-items: center;
+        flex-shrink: 0;
+    }
+    .icon svg { width: 16px; height: 16px; stroke: var(--blue); fill: none; }
 
-<main class="main">
-    <div class="top-bar">
-        <a class="back-link" href="#" onclick="history.back(); return false;">
-            <span aria-hidden="true" style="font-size: 18px;">&#8592;</span>
-            <span>Quay lại</span>
-        </a>
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="text-align: right;">
-                <div style="font-weight: 800; color: rgba(0,0,0,0.85);">{{ user.ho_ten }}</div>
-                <small style="color: var(--muted); font-weight: 600;">Người học</small>
-            </div>
-            <div class="avatar">{{ user.ho_ten|first|upper }}</div>
-        </div>
-    </div>
+    .status-text {
+        font-size: 13px;
+        color: #a0aec0;
+        font-weight: 700;
+        margin-top: auto;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
 
+    .btn-action {
+        height: 48px; /* Nút thon gọn hơn */
+        border-radius: 10px;
+        background: var(--blue);
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px; /* Font nút bấm nhỏ lại */
+        font-weight: 700;
+        transition: 0.3s;
+    }
+    .btn-action:hover { background: #154c9e; }
+
+    .btn-disabled {
+        background: #e2e8f0;
+        color: #94a3b8;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main">
     <h1 class="page-title">Danh sách bài thi</h1>
 
     <div class="cards-grid">
         {% for de in ds_de_thi %}
-        <section class="exam-card">
+        <div class="exam-card">
             <h2 class="exam-title">{{ de.tenDeThi }}</h2>
 
             <div class="meta">
                 <div class="meta-row">
-                    <span class="icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="9"></circle>
-                            <path d="M12 7v6l4 2"></path>
+                    <span class="icon">
+                        <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="9"></circle><path d="M12 7v6l4 2"></path>
                         </svg>
                     </span>
                     <span>{{ de.thoiGianLamBai }} phút</span>
                 </div>
                 <div class="meta-row">
-                    <span class="icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9.2 9a3 3 0 1 1 5.7 1c-.7 1-2.4 1.4-2.4 3"></path>
-                            <path d="M12 17h.01"></path>
+                    <span class="icon">
+                        <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9.2 9a3 3 0 1 1 5.7 1c-.7 1-2.4 1.4-2.4 3"></path><path d="M12 17h.01"></path>
                         </svg>
                     </span>
                     <span>{{ de.danhSachCauHoi.count }} câu</span>
                 </div>
                 <div class="meta-row">
-                    <span class="icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 12a9 9 0 1 1-3-6.7"></path>
-                            <path d="M21 3v6h-6"></path>
+                    <span class="icon">
+                        <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 3v6h-6"></path>
                         </svg>
                     </span>
                     <span>{{ de.so_luot_con_lai }}/{{ de.soLanLamToiDa }} lượt</span>
                 </div>
             </div>
 
-            <div class="status">
-                {% if de.trangThai == 'DANG_THI' %}Đang mở{% else %}Đã đóng{% endif %}
+            <div class="status-text">
+                {% if de.trangThai == 'DANG_THI' %}
+                    <span style="color: #10b981;">● Đang mở</span>
+                {% else %}
+                    <span style="color: #ef4444;">● Đã đóng</span>
+                {% endif %}
             </div>
 
-            {% if de.trangThai == 'DANG_THI' and de.so_luot_con_lai > 0 %}
-                <a class="btn" href="{% url 'quiz:xac_nhan_thi' de.id %}">Bắt đầu làm bài</a>
+            {# PHẦN CHỈNH SỬA: Tách logic nút bấm để hiện "Hết lượt thi" #}
+            {% if de.trangThai == 'DANG_THI' %}
+                {% if de.so_luot_con_lai > 0 %}
+                    <a class="btn-action" href="{% url 'quiz:xac_nhan_thi' de.id %}">Bắt đầu làm bài</a>
+                {% else %}
+                    <div class="btn-action btn-disabled">Hết lượt thi</div>
+                {% endif %}
             {% else %}
-                <div class="btn disabled">Không khả dụng</div>
+                <div class="btn-action btn-disabled">Không khả dụng</div>
             {% endif %}
-        </section>
+        </div>
         {% empty %}
-        <div style="color: #a0aec0; font-weight: 600;">Chưa có đề thi nào.</div>
+        <div style="color: #a0aec0; font-weight: 600; padding: 20px;">Hiện tại chưa có đề thi nào dành cho bạn.</div>
         {% endfor %}
     </div>
-</main>
-
-</body>
-</html>
-
+</div>
+{% endblock %}
