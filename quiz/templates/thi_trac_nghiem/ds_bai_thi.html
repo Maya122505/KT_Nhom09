@@ -1,92 +1,79 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Quản lý kết quả - Q-TEST</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root { --blue: #1e5bb8; --bg: #f4f7fe; --text: #1b2559; --gray: #64748b; }
-        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; background: var(--bg); height: 100vh; overflow: hidden; }
+{% extends 'base.html' %}
 
-        /* SIDEBAR GIỐNG TRANG CHỦ */
-        .sidebar { width: 240px; background: var(--blue); color: white; display: flex; flex-direction: column; }
-        .logo { padding: 25px; font-size: 20px; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .nav-link { padding: 15px 25px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 14px; transition: 0.3s; }
-        .nav-link.active { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid white; }
+{% block title %}Quản lý kết quả - Q-TEST{% endblock %}
 
-        .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-        .header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
-        .container { padding: 30px; }
+{% block extra_css %}
+<style>
+    /* GIỮ NGUYÊN CSS GỐC CỦA UYÊN ĐỂ BẢNG VÀ SEARCH BOX ĐẸP NHƯ CŨ */
+    :root { --blue: #1e5bb8; --text: #1b2559; --gray: #64748b; }
+    
+    /* THANH TÌM KIẾM */
+    .title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .search-box { position: relative; }
+    .input-search { padding: 8px 15px 8px 35px; border: 1px solid #cbd5e1; border-radius: 4px; width: 250px; }
 
-        /* THANH TÌM KIẾM GIỐNG ẢNH SRS */
-        .title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .search-box { position: relative; }
-        .input-search { padding: 8px 15px 8px 35px; border: 1px solid #cbd5e1; border-radius: 4px; width: 250px; }
+    /* BẢNG DỮ LIỆU */
+    .table-box { 
+        background: white; 
+        border-radius: 8px; 
+        border: 1px solid #e2e8f0; 
+        overflow: hidden; 
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+    th { background: #f8fafc; padding: 15px; color: #64748b; font-weight: 600; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 11px; }
+    td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: var(--text); }
+    tr:hover { background: #f8fafc; }
 
-        /* BẢNG DỮ LIỆU ĐẸP */
-        .table-box { background: white; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-        th { background: #f8fafc; padding: 15px; color: #64748b; font-weight: 600; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 11px; }
-        td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: var(--text); }
-        tr:hover { background: #f8fafc; }
+    .btn-view { color: var(--blue); text-decoration: none; font-weight: 600; font-size: 13px; }
+    .btn-view:hover { text-decoration: underline; }
+    
+    .badge-count { background: #eef2ff; padding: 4px 12px; border-radius: 12px; color: var(--blue); font-weight: 600; }
+</style>
+{% endblock %}
 
-        .btn-view { color: var(--blue); text-decoration: none; font-weight: 600; font-size: 13px; }
-        .btn-view:hover { text-decoration: underline; }
-    </style>
-</head>
-<body>
-
-<nav class="sidebar">
-    <div class="logo">Q - TEST</div>
-    <a href="{% url 'quiz:trang_chu' %}" class="nav-link">Trang chủ</a>
-    <a href="{% url 'quiz:quan_ly_de_thi' %}" class="nav-link">Quản lý đề thi</a>
-    <a href="{% url 'quiz:ds_bai_thi_da_tao' %}" class="nav-link active">Quản lý kết quả</a>
-    <a href="{% url 'quiz:ngan_hang_cau_hoi' %}" class="nav-link">Ngân hàng câu hỏi</a>
-    <a href="{% url 'quiz:logout' %}" class="nav-link" style="margin-top: auto;">Đăng xuất</a>
-</nav>
-
-<main class="main">
-    <div class="header">
-        <div style="color: #64748b;">Quản lý kết quả thi > Danh sách bài thi</div>
-        <div style="font-weight: 600;">{{ user.ho_ten }} <span style="font-weight: 400; font-size: 12px;">(Người dạy)</span></div>
+{% block content %}
+<div class="container" style="padding: 10px;">
+    <div style="margin-bottom: 20px; color: #64748b; font-size: 14px;">
+        Quản lý kết quả thi > Danh sách bài thi
     </div>
 
-    <div class="container">
-        <div class="title-row">
-            <h2 style="font-size: 18px; color: var(--text); margin: 0;">Danh sách các bài thi đã tạo</h2>
-            <div class="search-box">
-                <input type="text" class="input-search" placeholder="Tìm kiếm bài thi...">
-            </div>
-        </div>
-
-        <div class="table-box">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tên bài thi</th>
-                        <th>Ngày bắt đầu</th>
-                        <th>Số lượng đã nộp</th>
-                        <th>Hành động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for de in ds_bai_thi %}
-                    <tr>
-                        <td style="font-weight: 600; color: #1e5bb8;">{{ de.tenDeThi }}</td>
-                        <td>{{ de.thoiGianBatDau|date:"d/m/Y" }}</td>
-                        <td><span style="background: #eef2ff; padding: 4px 12px; border-radius: 12px; color: var(--blue); font-weight: 600;">{{ de.ketquathi_set.count }}</span></td>
-                        <td>
-                            <a href="{% url 'quiz:xem_ket_qua_chi_tiet' de.id %}" class="btn-view">Xem kết quả</a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--gray);">Chưa có bài thi nào được tạo.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="title-row">
+        <h2 style="font-size: 18px; color: var(--text); margin: 0;">Danh sách các bài thi đã tạo</h2>
+        <div class="search-box">
+            <input type="text" class="input-search" placeholder="Tìm kiếm bài thi...">
         </div>
     </div>
-</main>
 
-</body>
-</html>
+    <div class="table-box">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tên bài thi</th>
+                    <th>Ngày bắt đầu</th>
+                    <th>Số lượng đã nộp</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for de in ds_bai_thi %}
+                <tr>
+                    <td style="font-weight: 600; color: #1e5bb8;">{{ de.tenDeThi }}</td>
+                    <td>{{ de.thoiGianBatDau|date:"d/m/Y" }}</td>
+                    <td><span class="badge-count">{{ de.ketquathi_set.count }}</span></td>
+                    <td>
+                        <a href="{% url 'quiz:xem_ket_qua_chi_tiet' de.id %}" class="btn-view">Xem kết quả</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 40px; color: var(--gray);">
+                        Chưa có bài thi nào được tạo.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
