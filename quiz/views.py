@@ -26,7 +26,8 @@ def user_login(request):
             login(request, user)
             return redirect('quiz:trang_chu')
         else:
-            return render(request, 'thi_trac_nghiem/login.html', {'error': 'Sai email hoặc mật khẩu!'})
+            return render(request, 'thi_trac_nghiem/login.html',
+                          {'error': 'Email hoặc mật khẩu không đúng'})
 
     return render(request, 'thi_trac_nghiem/login.html')
 
@@ -280,12 +281,11 @@ def nop_bai(request, ma_ket_qua):
     if ket_qua.thoiGianNopBai is not None:
         return redirect('quiz:xem_lai_bai_lam', ma_ket_qua=ket_qua.id)
 
-    de_thi = ket_qua.deThi
-
     with transaction.atomic():
         danh_sach_cau_hoi_id = []
         danh_sach_lua_chon_id = []
 
+        # Tách dữ liệu từ Form gửi lên
         for key, value in request.POST.items():
             if key.startswith('cauhoi_') and value.isdigit():
                 cau_hoi_id = int(key.split('_')[1])
@@ -294,14 +294,8 @@ def nop_bai(request, ma_ket_qua):
                 danh_sach_cau_hoi_id.append(cau_hoi_id)
                 danh_sach_lua_chon_id.append(lua_chon_id)
 
-        cac_lua_chon_da_tick = LuaChon.objects.filter(id__in=danh_sach_lua_chon_id)
+        ket_qua.tinh_diem(danh_sach_lua_chon_id)
 
-        so_cau_dung = cac_lua_chon_da_tick.filter(dapAnDung=True).count()
-
-        tong_so_cau = de_thi.danhSachCauHoi.count()
-        diem_moi_cau = 10.0 / tong_so_cau if tong_so_cau > 0 else 0
-
-        ket_qua.diemSo = round(so_cau_dung * diem_moi_cau, 2)
         ket_qua.thoiGianNopBai = timezone.now()
         ket_qua.save()
 
