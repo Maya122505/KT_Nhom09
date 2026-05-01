@@ -10,6 +10,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models.functions import Greatest
 from django.views.decorators.csrf import csrf_exempt
+from django.core.cache import cache
 
 from .models import NguoiDung, DeThi, KetQuaThi, LuaChon, ChiTietBaiLam, Khoa, MonHoc, LopHoc, NganHangCauHoi, CauHoi
 
@@ -19,15 +20,28 @@ def user_login(request):
         email_input = request.POST.get('email')
         matkhau_input = request.POST.get('password')
 
-        # Xác thực tài khoản
+        cache_key = f'failed_login_{email_input}'
+
+        so_lan_sai = cache.get(cache_key, 0)
+
+        if so_lan_sai >= 5:
+            return render(request, 'thi_trac_nghiem/login.html', {'error': 'Tài khoản tạm khóa vì lý do bảo mật'})
+
         user = authenticate(request, email=email_input, password=matkhau_input)
 
         if user is not None:
+            cache.delete(cache_key)
             login(request, user)
             return redirect('quiz:trang_chu')
         else:
-            return render(request, 'thi_trac_nghiem/login.html',
-                          {'error': 'Email hoặc mật khẩu không đúng'})
+            so_lan_sai += 1
+
+            cache.set(cache_key, so_lan_sai, timeout=900)
+
+            if so_lan_sai >= 5:
+                return render(request, 'thi_trac_nghiem/login.html', {'error': 'Tài khoản tạm khóa vì lý do bảo mật'})
+
+            return render(request, 'thi_trac_nghiem/login.html', {'error': 'Email hoặc mật khẩu không đúng'})
 
     return render(request, 'thi_trac_nghiem/login.html')
 
