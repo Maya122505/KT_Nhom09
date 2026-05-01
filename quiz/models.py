@@ -160,6 +160,23 @@ class KetQuaThi(models.Model):
     thoiGianBatDau = models.DateTimeField(default=timezone.now, verbose_name="Thời Gian Bắt Đầu Làm")
     thoiGianNopBai = models.DateTimeField(null=True, blank=True, verbose_name="Thời Gian Nộp Bài")
 
+    def tinh_diem(self, danh_sach_lua_chon_id):
+        """
+        Tính toán và cập nhật điểm số dựa trên danh sách ID lựa chọn.
+        """
+        tong_so_cau = self.deThi.danhSachCauHoi.count()
+        if tong_so_cau == 0:
+            self.diemSo = 0
+            self.save()
+            return 0
+
+        diem_moi_cau = 10.0 / tong_so_cau
+        so_cau_dung = LuaChon.objects.filter(id__in=danh_sach_lua_chon_id, dapAnDung=True).count()
+
+        self.diemSo = round(so_cau_dung * diem_moi_cau, 2)
+        self.save()
+        return self.diemSo
+
     def __str__(self):
         return f"{self.sinhVien.ho_ten} - {self.deThi.tenDeThi}"
 
