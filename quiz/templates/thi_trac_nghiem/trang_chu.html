@@ -4,11 +4,13 @@
 
 {% block extra_css %}
 <style>
-    /* GIỮ NGUYÊN CSS RUỘT CỦA UYÊN */
     :root {
-        --blue: #1e5bb8; --blue-hover: #164a96;
-        --green: #10b981; --green-hover: #059669;
+        --blue: #1565C0;
+        --blue-hover: #0D47A1;
+        --green: #10b981;
         --text: #1b2559;
+        --danger: #ef4444;
+        --warning: #eab308;
     }
 
     /* Thống kê */
@@ -17,19 +19,18 @@
     .card-stat .title { font-size: 11px; font-weight: 700; opacity: 0.8; margin-bottom: 10px; color: #4a5568; text-transform: uppercase; letter-spacing: 0.5px; }
     .card-stat .value { font-size: 32px; font-weight: 800; color: #1b2559; }
 
-    /* Welcome Section cho GV */
-    .welcome-box { background: white; padding: 40px; border-radius: 20px; text-align: center; border: 1px solid #edf2f7; }
+    /* List bài thi */
+    .exam-list-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: #1b2559; }
+    .exam-item { background: white; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border: 1px solid #edf2f7; transition: transform 0.2s; }
+    .exam-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 
-    /* List cho Học sinh */
-    .exam-item { background: white; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border: 1px solid #edf2f7; }
-    .btn-base { padding: 10px 25px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; color: white !important; display: inline-block; border: none; }
-    .btn-student { background-color: var(--blue); transition: 0.3s; cursor: pointer; }
+    .btn-base { padding: 10px 25px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; color: white !important; display: inline-block; border: none; transition: 0.3s; }
+    .btn-student { background-color: var(--blue); cursor: pointer; }
     .btn-student:hover { background-color: var(--blue-hover); }
 
-    /* CSS bổ sung để nút bị mờ khi đóng */
-    .btn-disabled { background-color: #a0aec0 !important; cursor: not-allowed !important; opacity: 0.8; }
-
-    .exam-list-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: #1b2559; }
+    /* CSS cho nút bị vô hiệu hóa nhưng vẫn có thể tương tác để hiện thông báo */
+    .btn-disabled { background-color: #a0aec0 !important; cursor: pointer !important; opacity: 0.8; }
+    .btn-disabled:hover { background-color: #718096 !important; }
 
     @media (max-width: 1024px) {
         .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -40,15 +41,8 @@
 {% block content %}
 <div style="padding: 10px;">
     <h1 style="font-size: 24px; margin: 0 0 30px 0; font-weight: 800;">
-    {% if now.hour < 12 %}
-        Chào buổi sáng,
-    {% elif now.hour < 18 %}
-        Chào buổi chiều,
-    {% else %}
-        Chào buổi tối,
-    {% endif %}
-    {{ user.ho_ten }}!
-</h1>
+        {% if now.hour < 12 %} Chào buổi sáng, {% elif now.hour < 18 %} Chào buổi chiều, {% else %} Chào buổi tối, {% endif %} {{ user.ho_ten }}!
+    </h1>
 
     <div class="stats-grid">
         {% if user.is_teacher %}
@@ -64,13 +58,7 @@
         {% endif %}
     </div>
 
-    {% if user.is_teacher %}
-        <div class="welcome-box">
-            <h2 style="color: var(--blue); margin-top: 0; font-weight: 800;">Chào mừng trở lại!</h2>
-            <p style="color: #718096; margin-bottom: 25px;">Hãy bắt đầu quản lý các bài thi và ngân hàng câu hỏi của bạn ngay hôm nay.</p>
-            <a href="{% url 'quiz:quan_ly_de_thi' %}" class="btn-base btn-student">Đi đến Quản lý đề thi</a>
-        </div>
-    {% else %}
+    {% if not user.is_teacher %}
         <div class="exam-list-title">Danh sách bài thi mới nhất</div>
         {% for de in ds_de_thi %}
         <div class="exam-item">
@@ -80,25 +68,39 @@
                     Thời gian: {{ de.thoiGianLamBai }} phút |
                     Trạng thái:
                     {% if de.trangThai == 'DANG_THI' %}
-                        <span style="color: #10b981; font-weight: 600;">Đang mở</span>
+                        <span style="color: var(--green); font-weight: 600;">Đang mở</span>
                     {% elif de.trangThai == 'DA_CONG_BO' %}
-                        <span style="color: #eab308; font-weight: 600;">Sắp mở</span>
+                        <span style="color: var(--warning); font-weight: 600;">Sắp mở</span>
                     {% else %}
-                        <span style="color: #ef4444; font-weight: 600;">Đã đóng</span>
+                        <span style="color: var(--danger); font-weight: 600;">Đã đóng</span>
                     {% endif %}
                 </div>
             </div>
 
-            {# PHẦN CHỈNH SỬA NÚT BẤM #}
-            {% if de.trangThai == 'DANG_THI' %}
-                <a href="{% url 'quiz:xac_nhan_thi' de.id %}" class="btn-base btn-student">Vào thi</a>
-            {% else %}
-                <button class="btn-base btn-disabled" disabled>Vào thi</button>
-            {% endif %}
+            <div class="action-box">
+                {% if de.trangThai == 'DANG_THI' %}
+                    <a href="{% url 'quiz:xac_nhan_thi' de.id %}" class="btn-base btn-student">Vào thi</a>
+                {% else %}
+                    {# SỬA LỖI: Bỏ thuộc tính disabled để bắt sự kiện click và hiển thị alert #}
+                    <button type="button" onclick="notifyUnavailable()" class="btn-base btn-disabled">
+                        Vào thi
+                    </button>
+                {% endif %}
+            </div>
         </div>
         {% empty %}
-            <p style="text-align: center; color: #a0aec0; padding: 40px; background: white; border-radius: 12px; border: 1px dashed #cbd5e1; font-style: italic;">Hiện tại bạn chưa có đề thi nào sắp tới.</p>
+            <p style="text-align: center; color: #a0aec0; padding: 40px;">Hiện tại bạn chưa có đề thi nào sắp tới.</p>
         {% endfor %}
     {% endif %}
 </div>
+
+<script>
+    /**
+     * Hàm hiển thị thông báo cho các đề thi không khả dụng.
+     * Fix bug: Hệ thống chặn truy cập nhưng không hiển thị thông báo.
+     */
+    function notifyUnavailable() {
+        alert("Đề thi hiện không khả dụng");
+    }
+</script>
 {% endblock %}
