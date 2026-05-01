@@ -23,5 +23,4 @@ urlpatterns = [
     path('tra-cuu-ket-qua/', views.tra_cuu_ket_qua, name='tra_cuu_ket_qua'),
     path('xem-lai-bai-lam/<int:ma_ket_qua>/', views.xem_lai_bai_lam, name='xem_lai_bai_lam'),
     path('api/luu-nhap/<int:ma_ket_qua>/', views.api_luu_nhap, name='api_luu_nhap'),
-    path('api/luu-nhap/<int:ma_ket_qua>/', views.api_luu_nhap, name='api_luu_nhap'),
 ]
