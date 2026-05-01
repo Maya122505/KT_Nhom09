@@ -45,7 +45,7 @@
             color: var(--text);
         }
 
-        .field { margin-top: 12px; }
+        .field { margin-top: 12px; position: relative; }
 
         input {
             width: 100%;
@@ -55,7 +55,11 @@
             padding: 0 10px;
             font-size: 13px;
             outline: none;
+            transition: border-color 0.2s;
         }
+
+        /* Highlight đỏ khi có lỗi */
+        input.input-error { border-color: var(--danger); }
 
         input::placeholder { color: rgba(17, 24, 39, 0.35); }
 
@@ -106,8 +110,17 @@
         .footer a { color: var(--muted); text-decoration: none; font-weight: 500; }
         .footer a:hover { text-decoration: underline; }
 
-        .error {
-            margin-top: 10px;
+        /* Style cho thông báo lỗi dưới ô input */
+        .error-msg {
+            display: none;
+            color: var(--danger);
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        /* Style cho lỗi tổng quát từ Server */
+        .error-summary {
+            margin-bottom: 14px;
             background: rgba(220, 38, 38, 0.06);
             border: 1px solid rgba(220, 38, 38, 0.22);
             color: var(--danger);
@@ -121,27 +134,31 @@
     <div class="card">
         <h1>Đăng nhập</h1>
 
+        <!-- Hiển thị lỗi tổng quát từ Backend nếu có -->
         {% if error %}
-        <div class="error">{{ error }}</div>
+        <div class="error-summary">{{ error }}</div>
         {% endif %}
 
-        <form method="POST" action="{% url 'quiz:login' %}">
+        <!-- Thêm novalidate để tắt cảnh báo mặc định của Edge/Chrome -->
+        <form id="loginForm" method="POST" action="{% url 'quiz:login' %}" novalidate>
             {% csrf_token %}
 
             <div class="field">
-                <input type="email" name="email" placeholder="Email" required autocomplete="email">
+                <input type="email" name="email" id="email" placeholder="Email" autocomplete="email">
+                <div id="email-error" class="error-msg">Vui lòng điền vào trường này</div>
             </div>
 
             <div class="field">
                 <div class="input-wrap">
-                    <input id="pwd" type="password" name="password" placeholder="Mật khẩu" required autocomplete="current-password">
+                    <input id="pwd" type="password" name="password" placeholder="Mật khẩu" autocomplete="current-password">
                     <button class="toggle" type="button" aria-label="Hiện/ẩn mật khẩu" onclick="togglePwd('pwd', 'eye')">
-                        <svg id="eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <svg id="eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
                             <circle cx="12" cy="12" r="3"></circle>
                         </svg>
                     </button>
                 </div>
+                <div id="pwd-error" class="error-msg">Vui lòng điền vào trường này</div>
             </div>
 
             <div class="forgot">
@@ -157,6 +174,7 @@
     </div>
 
     <script>
+        // Hàm ẩn/hiện mật khẩu
         function togglePwd(inputId, eyeId) {
             const input = document.getElementById(inputId);
             const eye = document.getElementById(eyeId);
@@ -164,7 +182,40 @@
             input.type = isPwd ? 'text' : 'password';
             eye.style.opacity = isPwd ? '0.55' : '1';
         }
+
+        // Xử lý kiểm tra lỗi đồng bộ khi Submit
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            let hasError = false;
+            const email = document.getElementById('email');
+            const pwd = document.getElementById('pwd');
+            const emailError = document.getElementById('email-error');
+            const pwdError = document.getElementById('pwd-error');
+
+            // Kiểm tra Email
+            if (!email.value.trim()) {
+                emailError.style.display = 'block';
+                email.classList.add('input-error');
+                hasError = true;
+            } else {
+                emailError.style.display = 'none';
+                email.classList.remove('input-error');
+            }
+
+            // Kiểm tra Mật khẩu
+            if (!pwd.value.trim()) {
+                pwdError.style.display = 'block';
+                pwd.classList.add('input-error');
+                hasError = true;
+            } else {
+                pwdError.style.display = 'none';
+                pwd.classList.remove('input-error');
+            }
+
+            // Ngăn gửi form nếu có lỗi trống trường
+            if (hasError) {
+                e.preventDefault();
+            }
+        });
     </script>
 </body>
 </html>
-
