@@ -40,20 +40,32 @@
 
 {% block content %}
 <div style="padding: 10px;">
-    {% now "H" as bay_gio %}
-    <h1 style="font-size: 24px; margin: 0 0 30px 0; font-weight: 800;">
-    {# Sử dụng filter 'date' trực tiếp trên một giá trị thời gian có sẵn của hệ thống #}
-    {% with current_hour=now|date:"H"|default:"0"|add:"0" %}
-        {% if current_hour < 12 %}
-            Chào buổi sáng,
-        {% elif current_hour < 18 %}
-            Chào buổi chiều,
-        {% else %}
-            Chào buổi tối,
-        {% endif %}
-    {% endwith %}
-    {{ user.ho_ten }}!
-</h1>
+<!-- Tìm dòng Chào buổi sáng và thay bằng đoạn này -->
+<h2 style="font-weight: 700; font-size: 24px; color: #111827;">
+    <span id="greeting-text">Chào buổi sáng</span>, {{ user.ho_ten|default:"Nguyễn Thị Lê Uyên" }}!
+</h2>
+
+<script>
+    function updateGreeting() {
+        const now = new Date();
+        const hour = now.getHours();
+        let greeting = "";
+
+        if (hour >= 5 && hour < 12) {
+            greeting = "Chào buổi sáng";
+        } else if (hour >= 12 && hour < 18) {
+            greeting = "Chào buổi chiều";
+        } else {
+            greeting = "Chào buổi tối";
+        }
+
+        // Cập nhật nội dung vào thẻ span
+        document.getElementById('greeting-text').innerText = greeting;
+    }
+
+    // Chạy hàm ngay khi trang web tải xong
+    document.addEventListener('DOMContentLoaded', updateGreeting);
+</script>
 
     <div class="stats-grid">
         {% if user.is_teacher %}
