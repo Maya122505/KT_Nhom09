@@ -140,7 +140,6 @@
                 {% endif %}
             </div>
 
-            {# PHẦN CHỈNH SỬA: Tách logic nút bấm để hiện "Hết lượt thi" #}
             {% if de.trangThai == 'DANG_THI' %}
                 {% if de.so_luot_con_lai > 0 %}
                     <a class="btn-action" href="{% url 'quiz:xac_nhan_thi' de.id %}">Bắt đầu làm bài</a>
