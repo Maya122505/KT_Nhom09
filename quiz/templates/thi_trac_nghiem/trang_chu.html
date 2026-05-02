@@ -40,9 +40,20 @@
 
 {% block content %}
 <div style="padding: 10px;">
+    {% now "H" as bay_gio %}
     <h1 style="font-size: 24px; margin: 0 0 30px 0; font-weight: 800;">
-        {% if now.hour < 12 %} Chào buổi sáng, {% elif now.hour < 18 %} Chào buổi chiều, {% else %} Chào buổi tối, {% endif %} {{ user.ho_ten }}!
-    </h1>
+    {# Sử dụng filter 'date' trực tiếp trên một giá trị thời gian có sẵn của hệ thống #}
+    {% with current_hour=now|date:"H"|default:"0"|add:"0" %}
+        {% if current_hour < 12 %}
+            Chào buổi sáng,
+        {% elif current_hour < 18 %}
+            Chào buổi chiều,
+        {% else %}
+            Chào buổi tối,
+        {% endif %}
+    {% endwith %}
+    {{ user.ho_ten }}!
+</h1>
 
     <div class="stats-grid">
         {% if user.is_teacher %}
